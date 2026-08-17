@@ -21,7 +21,7 @@ interface SimulationContextType {
   loading: boolean;
   
   // Auth
-  login: (email: string) => Promise<{ success: boolean; user?: User; error?: string }>;
+  login: (email: string, password?: string) => Promise<{ success: boolean; user?: User; error?: string }>;
   logout: () => void;
   
   // Employees
@@ -159,7 +159,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
   };
 
   // Auth implementation
-  const login = async (email: string) => {
+  const login = async (email: string, password?: string) => {
     setLoading(true);
     await new Promise((resolve) => setTimeout(resolve, 800)); // Simulate networking lag
     const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
@@ -168,6 +168,20 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
       if (user.status === 'inactive') {
         setLoading(false);
         return { success: false, error: 'This user account is deactivated.' };
+      }
+      
+      // Check blind credentials
+      const trimmedPassword = (password || '').trim();
+      let isCorrect = false;
+      if (user.role === 'admin') {
+        isCorrect = trimmedPassword === 'admin123' || trimmedPassword === 'admin';
+      } else {
+        isCorrect = trimmedPassword === 'employee123' || trimmedPassword === 'employee' || trimmedPassword === 'password';
+      }
+
+      if (!isCorrect) {
+        setLoading(false);
+        return { success: false, error: 'Authentication failed. Please verify credentials.' };
       }
       
       const updatedUser = { ...user, lastActivity: new Date().toISOString() };

@@ -49,7 +49,7 @@ export default function QuizzesListPage() {
           <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Education & Awareness</p>
           <h2 className="text-lg font-black text-slate-800 uppercase tracking-widest leading-none">Quiz Management</h2>
         </div>
-        <Link href="/admin/quizzes/new" passHref legacyBehavior>
+        <Link href="/admin/quizzes/new">
           <Button variant="primary" size="md" leftIcon={<PlusCircle className="w-4 h-4" />}>
             CREATE NEW QUIZ
           </Button>
@@ -99,7 +99,7 @@ export default function QuizzesListPage() {
                       {q.questions.length}
                     </td>
                     <td className="px-5 py-4 text-right flex items-center justify-end gap-2">
-                      <Link href={`/admin/quizzes/${q.id}`} passHref legacyBehavior>
+                      <Link href={`/admin/quizzes/${q.id}`}>
                         <Button 
                           variant="outline" 
                           size="sm" 

@@ -79,22 +79,22 @@ export default function AdminDashboardPage() {
           Administrative Actions
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Link href="/admin/policies/new" passHref legacyBehavior>
+          <Link href="/admin/policies/new">
             <Button variant="outline" className="w-full text-xs font-bold py-2.5" leftIcon={<PlusCircle className="w-4 h-4 text-blue-500" />}>
               CREATE POLICY
             </Button>
           </Link>
-          <Link href="/admin/employees/new" passHref legacyBehavior>
+          <Link href="/admin/employees/new">
             <Button variant="outline" className="w-full text-xs font-bold py-2.5" leftIcon={<UserPlus className="w-4 h-4 text-indigo-500" />}>
               ADD EMPLOYEE
             </Button>
           </Link>
-          <Link href="/admin/training/new" passHref legacyBehavior>
+          <Link href="/admin/training/new">
             <Button variant="outline" className="w-full text-xs font-bold py-2.5" leftIcon={<PlusCircle className="w-4 h-4 text-emerald-500" />}>
               ADD TRAINING
             </Button>
           </Link>
-          <Link href="/admin/compliance" passHref legacyBehavior>
+          <Link href="/admin/compliance">
             <Button variant="outline" className="w-full text-xs font-bold py-2.5" leftIcon={<ShieldCheck className="w-4 h-4 text-purple-500" />}>
               AUDIT COMPLIANCE
             </Button>

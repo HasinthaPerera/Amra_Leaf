@@ -153,7 +153,7 @@ export default function EmployeeDashboardPage() {
                       <p className="font-bold text-slate-800 leading-snug">{p.title}</p>
                       <p className="text-xxs text-slate-400">Version: {p.version} | Published: {p.publishedDate}</p>
                     </div>
-                    <Link href={`/employee/policies/${p.id}`} passHref legacyBehavior>
+                    <Link href={`/employee/policies/${p.id}`}>
                       <Button variant="primary" size="sm" className="py-1 px-3 text-xs">
                         Review & Sign
                       </Button>
@@ -203,7 +203,7 @@ export default function EmployeeDashboardPage() {
                           <div className="flex-1">
                             <ProgressBar value={progressVal} />
                           </div>
-                          <Link href={`/employee/training/${t.id}`} passHref legacyBehavior>
+                          <Link href={`/employee/training/${t.id}`}>
                             <Button variant="outline" size="sm" className="py-1 px-2.5 text-xxs border border-slate-200">
                               Study
                             </Button>
@@ -224,22 +224,22 @@ export default function EmployeeDashboardPage() {
           <div>
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Quick Navigation</h3>
             <div className="space-y-2">
-              <Link href="/employee/policies" passHref legacyBehavior>
+              <Link href="/employee/policies">
                 <Button variant="outline" className="w-full text-xs font-bold py-2 border border-slate-200 justify-start" leftIcon={<FileText className="w-4 h-4 text-blue-500" />}>
                   Security Policies
                 </Button>
               </Link>
-              <Link href="/employee/training" passHref legacyBehavior>
+              <Link href="/employee/training">
                 <Button variant="outline" className="w-full text-xs font-bold py-2 border border-slate-200 justify-start" leftIcon={<GraduationCap className="w-4 h-4 text-emerald-500" />}>
                   Training Library
                 </Button>
               </Link>
-              <Link href="/employee/quiz" passHref legacyBehavior>
+              <Link href="/employee/quiz">
                 <Button variant="outline" className="w-full text-xs font-bold py-2 border border-slate-200 justify-start" leftIcon={<HelpCircle className="w-4 h-4 text-purple-500" />}>
                   Take Knowledge Quizzes
                 </Button>
               </Link>
-              <Link href="/employee/progress" passHref legacyBehavior>
+              <Link href="/employee/progress">
                 <Button variant="outline" className="w-full text-xs font-bold py-2 border border-slate-200 justify-start" leftIcon={<ShieldCheckIcon className="w-4 h-4 text-indigo-500" />}>
                   My Progress Profile
                 </Button>

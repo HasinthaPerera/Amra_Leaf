@@ -62,7 +62,7 @@ export default function EmployeesListPage() {
           <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Cybersecurity Accounts</p>
           <h2 className="text-lg font-black text-slate-800 uppercase tracking-widest leading-none">Employee Directory</h2>
         </div>
-        <Link href="/admin/employees/new" passHref legacyBehavior>
+        <Link href="/admin/employees/new">
           <Button variant="primary" size="md" leftIcon={<UserPlus className="w-4 h-4" />}>
             ADD NEW EMPLOYEE
           </Button>
@@ -136,7 +136,7 @@ export default function EmployeesListPage() {
                       {formatDate(emp.lastActivity)}
                     </td>
                     <td className="px-5 py-4 text-right flex items-center justify-end gap-2">
-                      <Link href={`/admin/employees/${emp.id}`} passHref legacyBehavior>
+                      <Link href={`/admin/employees/${emp.id}`}>
                         <Button 
                           variant="outline" 
                           size="sm" 

@@ -135,7 +135,7 @@ export default function EmployeePoliciesListPage() {
                     )}
                   </div>
                   
-                  <Link href={`/employee/policies/${p.id}`} passHref legacyBehavior>
+                  <Link href={`/employee/policies/${p.id}`}>
                     <Button 
                       variant={isAcknowledged ? 'outline' : 'primary'} 
                       size="sm" 

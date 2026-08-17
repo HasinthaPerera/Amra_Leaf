@@ -61,7 +61,7 @@ export default function TrainingListPage() {
           <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Education & Awareness</p>
           <h2 className="text-lg font-black text-slate-800 uppercase tracking-widest leading-none">Training Management</h2>
         </div>
-        <Link href="/admin/training/new" passHref legacyBehavior>
+        <Link href="/admin/training/new">
           <Button variant="primary" size="md" leftIcon={<PlusCircle className="w-4 h-4" />}>
             CREATE TRAINING MODULE
           </Button>
@@ -129,7 +129,7 @@ export default function TrainingListPage() {
                         Preview
                       </Button>
                       
-                      <Link href={`/admin/training/${t.id}`} passHref legacyBehavior>
+                      <Link href={`/admin/training/${t.id}`}>
                         <Button 
                           variant="outline" 
                           size="sm" 

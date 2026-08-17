@@ -71,7 +71,7 @@ export default function PoliciesListPage() {
           <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Cybersecurity Documents</p>
           <h2 className="text-lg font-black text-slate-800 uppercase tracking-widest leading-none">Policy Management</h2>
         </div>
-        <Link href="/admin/policies/new" passHref legacyBehavior>
+        <Link href="/admin/policies/new">
           <Button variant="primary" size="md" leftIcon={<PlusCircle className="w-4 h-4" />}>
             CREATE NEW POLICY
           </Button>
@@ -154,7 +154,7 @@ export default function PoliciesListPage() {
                         Preview
                       </Button>
                       
-                      <Link href={`/admin/policies/${p.id}`} passHref legacyBehavior>
+                      <Link href={`/admin/policies/${p.id}`}>
                         <Button 
                           variant="outline" 
                           size="sm" 

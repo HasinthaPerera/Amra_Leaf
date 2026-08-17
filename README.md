@@ -1,5 +1,17 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Simulated Accounts & Credentials
+
+To test the application, log in with the following credentials:
+
+### 🔑 Admin Account (Sarah Jenkins)
+* **Corporate Email**: `admin@amraleaf.com`
+* **Password**: `admin` or `admin123`
+
+### 🔑 Employee Account (Liam Vance)
+* **Corporate Email**: `employee@amraleaf.com`
+* **Password**: `employee`, `employee123` or `password`
+
 ## Getting Started
 
 First, run the development server:

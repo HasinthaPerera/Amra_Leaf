@@ -149,7 +149,7 @@ export default function ComplianceMonitorPage() {
                         </Link>
                         <p className="text-xxs text-slate-400 font-semibold">{rec.department}</p>
                       </td>
-                      
+
                       <td className="px-5 py-4 text-center">
                         <div className="flex flex-col items-center">
                           <span className="text-xs font-bold mb-1 text-slate-700">{rec.policyCompletionRate}%</span>
@@ -192,7 +192,7 @@ export default function ComplianceMonitorPage() {
                       </td>
 
                       <td className="px-5 py-4 text-right">
-                        <Link href={`/admin/employees/${rec.userId}`} passHref legacyBehavior>
+                        <Link href={`/admin/employees/${rec.userId}`}>
                           <Button 
                             variant="outline" 
                             size="sm" 
