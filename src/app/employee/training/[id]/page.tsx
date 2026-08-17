@@ -186,7 +186,7 @@ export default function EmployeeTrainingDetailPage({ params }: EmployeeTrainingD
                 Test your knowledge now. Complete the multiple-choice quiz linked to this module to register your grade in the compliance directory.
               </p>
 
-              <Link href={`/employee/quiz/${linkedQuiz.id}`} passHref legacyBehavior>
+              <Link href={`/employee/quiz/${linkedQuiz.id}`}>
                 <Button 
                   variant="primary" 
                   className="w-full justify-center text-xs font-bold py-2 bg-purple-600 hover:bg-purple-500"

@@ -132,7 +132,7 @@ export default function EmployeeTrainingListPage() {
                   </div>
 
                   <div className="flex justify-end pt-1">
-                    <Link href={`/employee/training/${t.id}`} passHref legacyBehavior>
+                    <Link href={`/employee/training/${t.id}`}>
                       <Button 
                         variant={status === 'COMPLETED' ? 'outline' : 'primary'} 
                         size="sm" 

@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, Mail, Lock, CheckCircle2, User } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { useSimulation } from '@/context/SimulationContext';
 import { Button } from '@/components/ui/Button';
 import { Input, PasswordInput, Checkbox } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Feedback';
 
 export default function LoginPage() {
-  const { login, currentUser, loading: authLoading } = useSimulation();
+  const { login, currentUser } = useSimulation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -34,11 +34,15 @@ export default function LoginPage() {
       setError('Please provide a valid email address.');
       return;
     }
+    if (!password) {
+      setError('Please enter your security password.');
+      return;
+    }
     setError(null);
     setLoading(true);
 
     try {
-      const res = await login(email);
+      const res = await login(email, password);
       if (res.success && res.user) {
         if (res.user.role === 'admin') {
           router.replace('/admin/dashboard');
@@ -48,17 +52,11 @@ export default function LoginPage() {
       } else {
         setError(res.error || 'Authentication failed. Please verify credentials.');
       }
-    } catch (err) {
+    } catch {
       setError('An error occurred during authentication.');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDemoFill = (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword('••••••••••••');
-    setError(null);
   };
 
   return (
@@ -147,31 +145,7 @@ export default function LoginPage() {
             </div>
           </form>
 
-          {/* Quick-fill section */}
-          <div className="mt-8 border-t border-slate-700/60 pt-6">
-            <h4 className="text-xxs font-bold text-slate-400 uppercase tracking-widest mb-3.5 flex items-center justify-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-blue-500" />
-              Demo Roles Quick-Fill
-            </h4>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => handleDemoFill('admin@amraleaf.com')}
-                className="flex flex-col items-center justify-center px-3 py-2.5 bg-slate-900/40 hover:bg-slate-900/80 border border-slate-700 rounded-xl text-slate-300 hover:text-white transition-all text-xs font-semibold"
-              >
-                <span className="text-blue-400 font-extrabold mb-0.5">Admin Account</span>
-                <span className="text-xxs text-slate-500">admin@amraleaf.com</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDemoFill('employee@amraleaf.com')}
-                className="flex flex-col items-center justify-center px-3 py-2.5 bg-slate-900/40 hover:bg-slate-900/80 border border-slate-700 rounded-xl text-slate-300 hover:text-white transition-all text-xs font-semibold"
-              >
-                <span className="text-emerald-400 font-extrabold mb-0.5">Employee Account</span>
-                <span className="text-xxs text-slate-500">employee@amraleaf.com</span>
-              </button>
-            </div>
-          </div>
+
         </div>
       </div>
     </div>

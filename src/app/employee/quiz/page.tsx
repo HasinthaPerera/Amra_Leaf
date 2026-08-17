@@ -99,7 +99,7 @@ export default function EmployeeQuizListPage() {
 
                   <div className="w-full sm:w-auto">
                     {isModuleCompleted ? (
-                      <Link href={`/employee/quiz/${q.id}`} passHref legacyBehavior>
+                      <Link href={`/employee/quiz/${q.id}`}>
                         <Button 
                           variant={isPassed ? 'outline' : 'primary'} 
                           size="sm" 
