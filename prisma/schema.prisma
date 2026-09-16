@@ -1,0 +1,189 @@
+// Prisma schema for Amra Leaf Cybersecurity Policy & Awareness Management System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  EMPLOYEE
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model User {
+  id           String      @id @default(cuid())
+  employeeId   String      @unique
+  name         String
+  email        String      @unique
+  passwordHash String
+  role         UserRole    @default(EMPLOYEE)
+  department   String
+  status       UserStatus  @default(ACTIVE)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  acknowledgements PolicyAcknowledgement[]
+  trainingProgress TrainingProgress[]
+  quizAttempts     QuizAttempt[]
+  auditLogs        AuditLog[]
+  sessions         Session[]
+
+  @@index([email])
+  @@index([employeeId])
+  @@index([role])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+model Policy {
+  id          String        @id @default(cuid())
+  title       String
+  category    String
+  content     String
+  version     String
+  status      ContentStatus @default(DRAFT)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  publishedAt DateTime?
+
+  acknowledgements PolicyAcknowledgement[]
+
+  @@index([status])
+  @@index([category])
+}
+
+model PolicyAcknowledgement {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  policyId       String
+  policy         Policy   @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  policyVersion  String
+  acknowledgedAt DateTime @default(now())
+
+  @@unique([userId, policyId, policyVersion])
+  @@index([userId])
+  @@index([policyId])
+}
+
+model TrainingModule {
+  id               String        @id @default(cuid())
+  title            String
+  description      String
+  content          String
+  estimatedMinutes Int
+  status           ContentStatus @default(DRAFT)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  progress TrainingProgress[]
+  quizzes  Quiz[]
+
+  @@index([status])
+}
+
+model TrainingProgress {
+  id                 String         @id @default(cuid())
+  userId             String
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trainingId         String
+  trainingModule     TrainingModule @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  progressPercentage Int            @default(0)
+  status             ProgressStatus @default(NOT_STARTED)
+  startedAt          DateTime?
+  completedAt        DateTime?
+
+  @@unique([userId, trainingId])
+  @@index([userId])
+  @@index([trainingId])
+}
+
+model Quiz {
+  id             String         @id @default(cuid())
+  trainingId     String?
+  trainingModule TrainingModule? @relation(fields: [trainingId], references: [id], onDelete: SetNull)
+  title          String
+  description    String
+  passMark       Int
+  status         ContentStatus  @default(DRAFT)
+
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  @@index([trainingId])
+  @@index([status])
+}
+
+model QuizQuestion {
+  id            String @id @default(cuid())
+  quizId        String
+  quiz          Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  question      String
+  optionA       String
+  optionB       String
+  optionC       String
+  optionD       String
+  correctAnswer Int
+
+  @@index([quizId])
+}
+
+model QuizAttempt {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizId         String
+  quiz           Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  score          Int
+  totalQuestions Int
+  percentage     Int
+  passed         Boolean
+  submittedAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([quizId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  targetType String?
+  targetId   String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
