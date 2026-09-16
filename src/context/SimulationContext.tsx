@@ -72,7 +72,6 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
       const storedTraining = localStorage.getItem('amra_training');
       const storedQuizzes = localStorage.getItem('amra_quizzes');
       const storedProgress = localStorage.getItem('amra_progress');
-      const storedUser = localStorage.getItem('amra_current_user');
 
       if (storedUsers) setUsers(JSON.parse(storedUsers));
       else {
@@ -104,9 +103,23 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
         localStorage.setItem('amra_progress', JSON.stringify(mockUserProgress));
       }
 
-      if (storedUser) {
-        setCurrentUser(JSON.parse(storedUser));
-      }
+      // Check current session from server-side HttpOnly cookie
+      fetch('/api/auth/me')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.user) {
+            setCurrentUser(data.user);
+          } else {
+            setCurrentUser(null);
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to verify session from server:', err);
+          setCurrentUser(null);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     } catch (e) {
       console.error('Failed to parse localStorage data, resetting to mock data', e);
       setUsers(mockUsers);
@@ -114,7 +127,6 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
       setTrainingModules(mockTrainingModules);
       setQuizzes(mockQuizzes);
       setProgressList(mockUserProgress);
-    } finally {
       setLoading(false);
     }
   }, []);
@@ -150,53 +162,46 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
     }
     if (updatedUser !== undefined) {
       setCurrentUser(updatedUser);
-      if (updatedUser) {
-        localStorage.setItem('amra_current_user', JSON.stringify(updatedUser));
-      } else {
-        localStorage.removeItem('amra_current_user');
-      }
     }
   };
 
-  // Auth implementation
+  // Auth implementation - Real server-side authentication
   const login = async (email: string, password?: string) => {
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800)); // Simulate networking lag
-    const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-    
-    if (user) {
-      if (user.status === 'inactive') {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success || !data.user) {
         setLoading(false);
-        return { success: false, error: 'This user account is deactivated.' };
-      }
-      
-      // Check blind credentials
-      const trimmedPassword = (password || '').trim();
-      let isCorrect = false;
-      if (user.role === 'admin') {
-        isCorrect = trimmedPassword === 'admin123' || trimmedPassword === 'admin';
-      } else {
-        isCorrect = trimmedPassword === 'employee123' || trimmedPassword === 'employee' || trimmedPassword === 'password';
+        return {
+          success: false,
+          error: data.error || 'Invalid email or password',
+        };
       }
 
-      if (!isCorrect) {
-        setLoading(false);
-        return { success: false, error: 'Authentication failed. Please verify credentials.' };
-      }
-      
-      const updatedUser = { ...user, lastActivity: new Date().toISOString() };
-      const updatedUsers = users.map((u) => u.id === user.id ? updatedUser : u);
-      saveState(updatedUsers, undefined, undefined, undefined, undefined, updatedUser);
+      const authenticatedUser: User = data.user;
+      saveState(undefined, undefined, undefined, undefined, undefined, authenticatedUser);
       setLoading(false);
-      return { success: true, user: updatedUser };
+      return { success: true, user: authenticatedUser };
+    } catch (err) {
+      console.error('Authentication error:', err);
+      setLoading(false);
+      return { success: false, error: 'Invalid email or password' };
     }
-    
-    setLoading(false);
-    return { success: false, error: 'User with this email was not found.' };
   };
 
   const logout = () => {
-    saveState(undefined, undefined, undefined, undefined, undefined, null);
+    fetch('/api/auth/logout', { method: 'POST' })
+      .catch((err) => console.error('Logout error:', err))
+      .finally(() => {
+        saveState(undefined, undefined, undefined, undefined, undefined, null);
+      });
   };
 
   // Employees implementation
