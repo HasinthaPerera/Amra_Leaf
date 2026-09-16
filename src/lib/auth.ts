@@ -146,3 +146,44 @@ export async function requireAdmin(): Promise<SafeUser | null> {
   }
   return user;
 }
+
+/**
+ * Standardized API authorization guard for ADMIN-only routes.
+ * Returns { user, response } where response is 401 (Unauthenticated) or 403 (Forbidden) if unauthorized.
+ */
+export async function verifyAdminApi(): Promise<
+  { user: SafeUser; response: null } | { user: null; response: Response }
+> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return {
+      user: null,
+      response: Response.json({ error: 'Unauthenticated' }, { status: 401 }),
+    };
+  }
+  if (user.role !== 'ADMIN') {
+    return {
+      user: null,
+      response: Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 }),
+    };
+  }
+  return { user, response: null };
+}
+
+/**
+ * Standardized API authorization guard for authenticated users (ADMIN or EMPLOYEE).
+ * Returns { user, response } where response is 401 (Unauthenticated) if unauthorized.
+ */
+export async function verifyAuthenticatedApi(): Promise<
+  { user: SafeUser; response: null } | { user: null; response: Response }
+> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return {
+      user: null,
+      response: Response.json({ error: 'Unauthenticated' }, { status: 401 }),
+    };
+  }
+  return { user, response: null };
+}
+
