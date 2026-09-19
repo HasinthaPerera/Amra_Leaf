@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useMemo, use } from 'react';
+import React, { useMemo, use, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, Mail, Building, Clock, 
-  ShieldCheck, AlertTriangle, FileText, GraduationCap, HelpCircle 
+  ShieldCheck, AlertTriangle, FileText, GraduationCap, HelpCircle, Edit2, Save, X 
 } from 'lucide-react';
 import { useSimulation } from '@/context/SimulationContext';
 import { Card, StatCard } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Input, Select } from '@/components/ui/Input';
 import { StatusBadge, ProgressBar } from '@/components/ui/Feedback';
 import { Breadcrumb } from '@/components/ui/Navigation';
 
@@ -21,7 +22,6 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
   const router = useRouter();
   
   const { 
-    users, 
     progressList, 
     policies, 
     trainingModules, 
@@ -29,21 +29,41 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
     getComplianceRecords 
   } = useSimulation();
 
-  // Find target employee
-  const employee = useMemo(() => {
-    return users.find((u) => u.id === id && u.role === 'employee') || null;
-  }, [users, id]);
+  const [employee, setEmployee] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', email: '', department: '' });
+  const [updateLoading, setUpdateLoading] = useState(false);
 
-  // Find progress record
+  useEffect(() => {
+    fetch(`/api/admin/employees/${id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) {
+          setEmployee(data);
+          setEditForm({ name: data.name, email: data.email, department: data.department });
+        }
+      })
+      .catch(err => console.error('Error fetching employee:', err))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  // Find progress record using employeeId
   const progress = useMemo(() => {
-    return progressList.find((p) => p.userId === id) || null;
-  }, [progressList, id]);
+    if (!employee) return null;
+    return progressList.find((p) => p.userId === employee.employeeId) || null;
+  }, [progressList, employee]);
 
-  // Compliance record (aggregated scores)
+  // Compliance record using employeeId
   const compliance = useMemo(() => {
+    if (!employee) return null;
     const records = getComplianceRecords();
-    return records.find((r) => r.userId === id) || null;
-  }, [getComplianceRecords, id]);
+    return records.find((r) => r.userId === employee.employeeId) || null;
+  }, [getComplianceRecords, employee]);
+
+  if (loading) {
+    return <div className="py-20 text-center text-slate-500">Loading profile...</div>;
+  }
 
   // If employee doesn't exist
   if (!employee) {
@@ -102,38 +122,123 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
         {/* Left Column: Account Details */}
         <Card className="flex flex-col justify-between">
           <div className="space-y-4">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">
-              Identity & Account
-            </h3>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Identity & Account
+              </h3>
+              {!isEditing ? (
+                <button onClick={() => setIsEditing(true)} className="text-blue-500 hover:text-blue-700">
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button onClick={() => setIsEditing(false)} className="text-slate-400 hover:text-slate-600">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
             
-            <div className="flex items-center gap-2.5 text-slate-600">
-              <Mail className="w-4 h-4 text-slate-400" />
-              <div className="text-xs font-medium truncate">
-                <span className="block font-bold text-slate-700">Email Address</span>
-                {employee.email}
+            {isEditing ? (
+              <div className="space-y-3">
+                <Input 
+                  label="Name" 
+                  value={editForm.name} 
+                  onChange={e => setEditForm({ ...editForm, name: e.target.value })} 
+                />
+                <Input 
+                  label="Email" 
+                  type="email"
+                  value={editForm.email} 
+                  onChange={e => setEditForm({ ...editForm, email: e.target.value })} 
+                />
+                <Select
+                  label="Department"
+                  options={[
+                    { value: 'Operations', label: 'Operations' },
+                    { value: 'Finance & Accounts', label: 'Finance & Accounts' },
+                    { value: 'Human Resources', label: 'Human Resources' },
+                    { value: 'Software Engineering', label: 'Software Engineering' },
+                    { value: 'Sales & Marketing', label: 'Sales & Marketing' },
+                    { value: 'Customer Success', label: 'Customer Success' },
+                    { value: 'IT Support & Administration', label: 'IT Support & Administration' },
+                    { value: 'Legal & Compliance', label: 'Legal & Compliance' },
+                    { value: 'POS / Cashier', label: 'POS / Cashier' },
+                    { value: 'Front Office / Service', label: 'Front Office / Service' }
+                  ]}
+                  value={editForm.department}
+                  onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
+                />
+                <Button 
+                  variant="primary" 
+                  size="sm" 
+                  className="w-full"
+                  isLoading={updateLoading}
+                  onClick={async () => {
+                    setUpdateLoading(true);
+                    try {
+                      const res = await fetch(`/api/admin/employees/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(editForm)
+                      });
+                      if (res.ok) {
+                        const updated = await res.json();
+                        setEmployee(updated);
+                        setIsEditing(false);
+                      } else {
+                        const data = await res.json();
+                        alert(data.error || 'Failed to update employee');
+                      }
+                    } catch (error) {
+                      alert('Network error');
+                    }
+                    setUpdateLoading(false);
+                  }}
+                >
+                  Save Changes
+                </Button>
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2.5 text-slate-600">
+                  <ShieldCheck className="w-4 h-4 text-slate-400" />
+                  <div className="text-xs font-medium truncate">
+                    <span className="block font-bold text-slate-700">Employee ID</span>
+                    {employee.employeeId}
+                  </div>
+                </div>
 
-            <div className="flex items-center gap-2.5 text-slate-600">
-              <Building className="w-4 h-4 text-slate-400" />
-              <div className="text-xs font-medium">
-                <span className="block font-bold text-slate-700">Department</span>
-                {employee.department}
-              </div>
-            </div>
+                <div className="flex items-center gap-2.5 text-slate-600">
+                  <Mail className="w-4 h-4 text-slate-400" />
+                  <div className="text-xs font-medium truncate">
+                    <span className="block font-bold text-slate-700">Email Address</span>
+                    {employee.email}
+                  </div>
+                </div>
 
-            <div className="flex items-center gap-2.5 text-slate-600">
-              <Clock className="w-4 h-4 text-slate-400" />
-              <div className="text-xs font-medium">
-                <span className="block font-bold text-slate-700">Last Activity Logs</span>
-                {formatDate(employee.lastActivity)}
-              </div>
-            </div>
+                <div className="flex items-center gap-2.5 text-slate-600">
+                  <Building className="w-4 h-4 text-slate-400" />
+                  <div className="text-xs font-medium">
+                    <span className="block font-bold text-slate-700">Department</span>
+                    {employee.department}
+                  </div>
+                </div>
 
-            <div>
-              <span className="block text-xs font-bold text-slate-700 mb-1">Status</span>
-              <StatusBadge status={employee.status} />
-            </div>
+                <div className="flex items-center gap-2.5 text-slate-600">
+                  <Clock className="w-4 h-4 text-slate-400" />
+                  <div className="text-xs font-medium">
+                    <span className="block font-bold text-slate-700">Created Date</span>
+                    {formatDate(employee.createdAt)}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="block text-xs font-bold text-slate-700 mb-1">Status</span>
+                  <StatusBadge status={employee.status} />
+                </div>
+              </>
+            )}
           </div>
           
           {compliance && (

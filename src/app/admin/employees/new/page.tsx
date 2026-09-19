@@ -4,18 +4,18 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, UserPlus, CheckCircle } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { useSimulation } from '@/context/SimulationContext';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Breadcrumb } from '@/components/ui/Navigation';
 
 export default function NewEmployeePage() {
-  const { addEmployee } = useSimulation();
+  const [employeeId, setEmployeeId] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [department, setDepartment] = useState('Operations');
-  const [status, setStatus] = useState<'active' | 'inactive'>('active');
+  const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE');
   
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -35,11 +35,15 @@ export default function NewEmployeePage() {
 
   const validate = () => {
     const errs: Record<string, string> = {};
+    if (!employeeId.trim()) errs.employeeId = 'Employee ID is required';
     if (!name.trim()) errs.name = 'Full name is required';
     if (!email.trim()) {
       errs.email = 'Email address is required';
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       errs.email = 'Please provide a valid email format';
+    }
+    if (!password || password.length < 8) {
+      errs.password = 'Password must be at least 8 characters';
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -50,23 +54,35 @@ export default function NewEmployeePage() {
     if (!validate()) return;
 
     setLoading(true);
-    // Simulate networking lag
-    await new Promise((r) => setTimeout(r, 600));
+    setErrors({});
 
     try {
-      addEmployee({
-        name,
-        email,
-        department,
-        status,
-        role: 'employee'
+      const res = await fetch('/api/admin/employees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employeeId,
+          name,
+          email,
+          password,
+          department,
+          status,
+        })
       });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrors({ global: data.error || 'Failed to create employee record' });
+        return;
+      }
+
       setSuccess(true);
       setTimeout(() => {
         router.push('/admin/employees');
       }, 1000);
     } catch (e) {
-      setErrors({ global: 'Failed to create employee record' });
+      setErrors({ global: 'Failed to create employee record due to network error' });
     } finally {
       setLoading(false);
     }
@@ -110,7 +126,16 @@ export default function NewEmployeePage() {
               </p>
             )}
 
-            <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Employee ID"
+                placeholder="e.g. EMP008"
+                required
+                value={employeeId}
+                onChange={(e) => setEmployeeId(e.target.value)}
+                error={errors.employeeId}
+              />
+
               <Input
                 label="Full Name"
                 placeholder="e.g. Liam Vance"
@@ -121,7 +146,7 @@ export default function NewEmployeePage() {
               />
             </div>
 
-            <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Corporate Email Address"
                 placeholder="e.g. employee@amraleaf.com"
@@ -130,6 +155,16 @@ export default function NewEmployeePage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 error={errors.email}
+              />
+
+              <Input
+                label="Temporary Password"
+                placeholder="Minimum 8 characters"
+                required
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                error={errors.password}
               />
             </div>
 
@@ -147,11 +182,11 @@ export default function NewEmployeePage() {
                 <Select
                   label="Initial Account Status"
                   options={[
-                    { value: 'active', label: 'Active' },
-                    { value: 'inactive', label: 'Inactive / Suspended' }
+                    { value: 'ACTIVE', label: 'Active' },
+                    { value: 'INACTIVE', label: 'Inactive / Suspended' }
                   ]}
                   value={status}
-                  onChange={(e) => setStatus(e.target.value as 'active' | 'inactive')}
+                  onChange={(e) => setStatus(e.target.value as 'ACTIVE' | 'INACTIVE')}
                 />
               </div>
             </div>

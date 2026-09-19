@@ -24,9 +24,7 @@ interface SimulationContextType {
   login: (email: string, password?: string) => Promise<{ success: boolean; user?: User; error?: string }>;
   logout: () => void;
   
-  // Employees
-  addEmployee: (employee: Omit<User, 'id' | 'lastActivity'>) => User;
-  updateEmployee: (id: string, updates: Partial<User>) => void;
+  // Employees - Migrated to real PostgreSQL API
   
   // Policies
   addPolicy: (policy: Omit<Policy, 'id' | 'createdDate' | 'updatedDate'>) => Policy;
@@ -204,44 +202,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
       });
   };
 
-  // Employees implementation
-  const addEmployee = (employeeData: Omit<User, 'id' | 'lastActivity'>) => {
-    const nextIdVal = users
-      .filter((u) => u.role === 'employee')
-      .reduce((max, u) => {
-        const num = parseInt(u.id.replace('EMP', ''), 10);
-        return num > max ? num : max;
-      }, 8);
-    const newId = `EMP${String(nextIdVal + 1).padStart(3, '0')}`;
-    const newEmployee: User = {
-      ...employeeData,
-      id: newId,
-      lastActivity: new Date().toISOString(),
-    };
-    
-    const updatedUsers = [...users, newEmployee];
-    
-    // Initialize Progress Record
-    const initialProgress: UserProgress = {
-      userId: newId,
-      policyProgress: policies
-        .filter((p) => p.status === 'PUBLISHED')
-        .map((p) => ({ policyId: p.id, status: 'PENDING' })),
-      trainingProgress: trainingModules
-        .filter((t) => t.status === 'PUBLISHED')
-        .map((t) => ({ moduleId: t.id, progressPercent: 0, status: 'NOT_STARTED' })),
-      quizResults: [],
-    };
-    
-    const updatedProgress = [...progressList, initialProgress];
-    saveState(updatedUsers, undefined, undefined, undefined, updatedProgress);
-    return newEmployee;
-  };
-
-  const updateEmployee = (id: string, updates: Partial<User>) => {
-    const updatedUsers = users.map((u) => u.id === id ? { ...u, ...updates } : u);
-    saveState(updatedUsers);
-  };
+  // Employee Management was migrated to PostgreSQL.
 
   // Policies implementation
   const addPolicy = (policyData: Omit<Policy, 'id' | 'createdDate' | 'updatedDate'>) => {
@@ -652,8 +613,6 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
         loading,
         login,
         logout,
-        addEmployee,
-        updateEmployee,
         addPolicy,
         updatePolicy,
         publishPolicy,
