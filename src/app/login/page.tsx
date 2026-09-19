@@ -5,14 +5,13 @@ import { useRouter } from 'next/navigation';
 import { ShieldCheck } from 'lucide-react';
 import { useSimulation } from '@/context/SimulationContext';
 import { Button } from '@/components/ui/Button';
-import { Input, PasswordInput, Checkbox } from '@/components/ui/Input';
+import { Input, PasswordInput } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Feedback';
 
 export default function LoginPage() {
   const { login, currentUser } = useSimulation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -30,6 +29,8 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return; // Prevent duplicate login submissions
+
     if (!email) {
       setError('Please provide a valid email address.');
       return;
@@ -50,10 +51,10 @@ export default function LoginPage() {
           router.replace('/employee/dashboard');
         }
       } else {
-        setError(res.error || 'Authentication failed. Please verify credentials.');
+        setError('Invalid email or password.');
       }
     } catch {
-      setError('An error occurred during authentication.');
+      setError('Invalid email or password.');
     } finally {
       setLoading(false);
     }
@@ -104,6 +105,7 @@ export default function LoginPage() {
                 placeholder="you@amraleaf.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
                 className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500 focus:border-blue-500 focus:ring-blue-500/20"
               />
             </div>
@@ -116,36 +118,22 @@ export default function LoginPage() {
                 placeholder="Enter account password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
                 className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500 focus:border-blue-500 focus:ring-blue-500/20"
               />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Checkbox
-                label={<span className="text-slate-400 font-medium">Remember this device</span>}
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="border-slate-700 checked:bg-blue-600 focus:ring-blue-500/20"
-              />
-              <div className="text-xs">
-                <a href="#" className="font-semibold text-blue-400 hover:text-blue-300">
-                  Forgot Password?
-                </a>
-              </div>
             </div>
 
             <div>
               <Button
                 type="submit"
-                className="w-full justify-center bg-blue-600 hover:bg-blue-500 py-2.5 font-bold tracking-wider"
+                disabled={loading}
                 isLoading={loading}
+                className="w-full justify-center bg-blue-600 hover:bg-blue-500 py-2.5 font-bold tracking-wider"
               >
-                SECURE SIGN IN
+                {loading ? 'SIGNING IN...' : 'SECURE SIGN IN'}
               </Button>
             </div>
           </form>
-
-
         </div>
       </div>
     </div>
