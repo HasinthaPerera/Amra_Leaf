@@ -6,11 +6,11 @@ To test the application, log in with the following credentials:
 
 ### 🔑 Admin Account (Sarah Jenkins)
 * **Corporate Email**: `admin@amraleaf.com`
-* **Password**: `admin` or `admin123`
+* **Password**: `AmraAdmin2026!`
 
 ### 🔑 Employee Account (Liam Vance)
 * **Corporate Email**: `employee@amraleaf.com`
-* **Password**: `employee`, `employee123` or `password`
+* **Password**: `AmraEmployee2026!`
 
 ## Getting Started
 
