@@ -26,11 +26,8 @@ interface SimulationContextType {
   
   // Employees - Migrated to real PostgreSQL API
   
-  // Policies
-  addPolicy: (policy: Omit<Policy, 'id' | 'createdDate' | 'updatedDate'>) => Policy;
-  updatePolicy: (id: string, updates: Partial<Policy>) => void;
-  publishPolicy: (id: string) => void;
-  archivePolicy: (id: string) => void;
+  // Policies - Migrated to real PostgreSQL API
+  // Transitional mock policy data kept ONLY for old compliance calculations.
   
   // Training
   addTraining: (module: Omit<TrainingModule, 'id' | 'createdDate' | 'updatedDate'>) => TrainingModule;
@@ -42,7 +39,6 @@ interface SimulationContextType {
   deleteQuiz: (id: string) => void;
   
   // Employee Actions
-  acknowledgePolicy: (policyId: string) => void;
   updateTrainingProgress: (moduleId: string, progress: number) => void;
   submitQuizResult: (quizId: string, answers: Record<string, number>) => QuizResult;
   
@@ -204,82 +200,8 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
 
   // Employee Management was migrated to PostgreSQL.
 
-  // Policies implementation
-  const addPolicy = (policyData: Omit<Policy, 'id' | 'createdDate' | 'updatedDate'>) => {
-    const nextIdVal = policies.reduce((max, p) => {
-      const num = parseInt(p.id.replace('POL', ''), 10);
-      return num > max ? num : max;
-    }, 8);
-    const newId = `POL${String(nextIdVal + 1).padStart(3, '0')}`;
-    
-    const newPolicy: Policy = {
-      ...policyData,
-      id: newId,
-      createdDate: new Date().toISOString().split('T')[0],
-      updatedDate: new Date().toISOString().split('T')[0],
-      publishedDate: policyData.status === 'PUBLISHED' ? new Date().toISOString().split('T')[0] : undefined,
-    };
-
-    const updatedPolicies = [...policies, newPolicy];
-
-    // Update progress records if policy is published
-    let updatedProgress = [...progressList];
-    if (newPolicy.status === 'PUBLISHED') {
-      updatedProgress = progressList.map((p) => {
-        // Only append if it doesn't already exist
-        if (!p.policyProgress.some((pr) => pr.policyId === newId)) {
-          return {
-            ...p,
-            policyProgress: [...p.policyProgress, { policyId: newId, status: 'PENDING' }],
-          };
-        }
-        return p;
-      });
-    }
-
-    saveState(undefined, updatedPolicies, undefined, undefined, updatedProgress);
-    return newPolicy;
-  };
-
-  const updatePolicy = (id: string, updates: Partial<Policy>) => {
-    const updatedPolicies = policies.map((p) => {
-      if (p.id === id) {
-        const isPublishing = updates.status === 'PUBLISHED' && p.status !== 'PUBLISHED';
-        return {
-          ...p,
-          ...updates,
-          updatedDate: new Date().toISOString().split('T')[0],
-          publishedDate: isPublishing ? new Date().toISOString().split('T')[0] : p.publishedDate,
-        } as Policy;
-      }
-      return p;
-    });
-
-    // Check if this policy was just published, if so add to employee progress lists
-    const targetPolicy = policies.find((p) => p.id === id);
-    let updatedProgress = [...progressList];
-    if (targetPolicy && updates.status === 'PUBLISHED' && targetPolicy.status !== 'PUBLISHED') {
-      updatedProgress = progressList.map((p) => {
-        if (!p.policyProgress.some((pr) => pr.policyId === id)) {
-          return {
-            ...p,
-            policyProgress: [...p.policyProgress, { policyId: id, status: 'PENDING' }],
-          };
-        }
-        return p;
-      });
-    }
-
-    saveState(undefined, updatedPolicies, undefined, undefined, updatedProgress);
-  };
-
-  const publishPolicy = (id: string) => {
-    updatePolicy(id, { status: 'PUBLISHED' });
-  };
-
-  const archivePolicy = (id: string) => {
-    updatePolicy(id, { status: 'ARCHIVED' });
-  };
+  // Policy CRUD operations were migrated to PostgreSQL API.
+  // The 'policies' state array remains ONLY as transitional mock data for old compliance calculations.
 
   // Training implementation
   const addTraining = (trainingData: Omit<TrainingModule, 'id' | 'createdDate' | 'updatedDate'>) => {
@@ -374,44 +296,6 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
   };
 
   // Employee actions
-  const acknowledgePolicy = (policyId: string) => {
-    if (!currentUser) return;
-    
-    const updatedProgress = progressList.map((p) => {
-      if (p.userId === currentUser.id) {
-        const policyIndex = p.policyProgress.findIndex((pp) => pp.policyId === policyId);
-        
-        const newPolicyProgress = [...p.policyProgress];
-        if (policyIndex >= 0) {
-          newPolicyProgress[policyIndex] = {
-            policyId,
-            status: 'ACKNOWLEDGED',
-            acknowledgedAt: new Date().toISOString(),
-          };
-        } else {
-          newPolicyProgress.push({
-            policyId,
-            status: 'ACKNOWLEDGED',
-            acknowledgedAt: new Date().toISOString(),
-          });
-        }
-        
-        return {
-          ...p,
-          policyProgress: newPolicyProgress,
-        };
-      }
-      return p;
-    });
-
-    // Update currentUser activity timestamp
-    const updatedUsers = users.map((u) => 
-      u.id === currentUser.id ? { ...u, lastActivity: new Date().toISOString() } : u
-    );
-
-    saveState(updatedUsers, undefined, undefined, undefined, updatedProgress);
-  };
-
   const updateTrainingProgress = (moduleId: string, progress: number) => {
     if (!currentUser) return;
 
@@ -613,16 +497,11 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
         loading,
         login,
         logout,
-        addPolicy,
-        updatePolicy,
-        publishPolicy,
-        archivePolicy,
         addTraining,
         updateTraining,
         addQuiz,
         updateQuiz,
         deleteQuiz,
-        acknowledgePolicy,
         updateTrainingProgress,
         submitQuizResult,
         getComplianceRecords,

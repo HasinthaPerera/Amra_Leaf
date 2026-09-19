@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, use } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ShieldCheck, AlertCircle, FileText, Check } from 'lucide-react';
-import { useSimulation } from '@/context/SimulationContext';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
@@ -15,43 +14,64 @@ interface EmployeePolicyDetailPageProps {
 
 export default function EmployeePolicyDetailPage({ params }: EmployeePolicyDetailPageProps) {
   const { id } = use(params);
-  const { currentUser, policies, progressList, acknowledgePolicy } = useSimulation();
-  const [isChecked, setIsChecked] = useState(false);
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Find target policy
-  const policy = useMemo(() => {
-    return policies.find((p) => p.id === id && p.status === 'PUBLISHED') || null;
-  }, [policies, id]);
+  const [policy, setPolicy] = useState<any>(null);
+  const [loadingPolicy, setLoadingPolicy] = useState(true);
 
-  // Find user progress record
-  const progress = useMemo(() => {
-    if (!currentUser) return null;
-    return progressList.find((p) => p.userId === currentUser.id) || null;
-  }, [progressList, currentUser]);
+  const [isChecked, setIsChecked] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Check if already acknowledged
-  const isAcknowledged = useMemo(() => {
-    if (!progress) return false;
-    const state = progress.policyProgress.find((pp) => pp.policyId === id);
-    return state?.status === 'ACKNOWLEDGED';
-  }, [progress, id]);
+  useEffect(() => {
+    fetch(`/api/employee/policies/${id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) {
+          setPolicy(data);
+        }
+      })
+      .finally(() => setLoadingPolicy(false));
+  }, [id]);
+
+  const isAcknowledged = policy?.isAcknowledged || false;
 
   const handleAcknowledge = async () => {
     if (!isChecked || isAcknowledged) return;
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600)); // Simulate validation lag
+    setError(null);
     
     try {
-      acknowledgePolicy(id);
+      const res = await fetch(`/api/employee/policies/${id}/acknowledge`, {
+        method: 'POST'
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        setError(data.error || 'Failed to acknowledge policy.');
+        return;
+      }
+      
+      // Update local state to reflect acknowledgment
+      setPolicy((prev: any) => ({
+        ...prev,
+        isAcknowledged: true,
+        acknowledgedAt: new Date().toISOString()
+      }));
     } catch (e) {
       console.error(e);
+      setError('A network error occurred.');
     } finally {
       setLoading(false);
     }
   };
+
+  if (loadingPolicy) {
+    return <div className="py-20 text-center text-slate-500 font-semibold">Loading document...</div>;
+  }
+
+
 
   if (!policy) {
     return (
@@ -141,6 +161,12 @@ export default function EmployeePolicyDetailPage({ params }: EmployeePolicyDetai
                 <p className="text-xxs text-slate-400 leading-relaxed font-medium">
                   Review the left panel and click the signature box to acknowledge receipt, reading comprehension, and compliance agreement of the policy rules.
                 </p>
+
+                {error && (
+                  <p className="text-xs font-semibold text-red-600 bg-red-50 border border-red-100 p-2 rounded">
+                    {error}
+                  </p>
+                )}
 
                 <div className="bg-slate-50 border border-slate-100 p-3 rounded-lg">
                   <Checkbox

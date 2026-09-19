@@ -1,27 +1,29 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { FileText, Search, ShieldCheck, AlertCircle, Eye } from 'lucide-react';
-import { useSimulation } from '@/context/SimulationContext';
 import { SearchBar } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 
 export default function EmployeePoliciesListPage() {
-  const { currentUser, policies, progressList } = useSimulation();
+  const [publishedPolicies, setPublishedPolicies] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
 
-  // Load progress record for current employee
-  const progress = useMemo(() => {
-    if (!currentUser) return null;
-    return progressList.find((p) => p.userId === currentUser.id) || null;
-  }, [progressList, currentUser]);
-
-  const publishedPolicies = useMemo(() => {
-    return policies.filter((p) => p.status === 'PUBLISHED');
-  }, [policies]);
+  useEffect(() => {
+    fetch('/api/employee/policies')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setPublishedPolicies(data);
+        }
+      })
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, []);
 
   const categories = useMemo(() => {
     const cats = new Set<string>();
@@ -86,7 +88,9 @@ export default function EmployeePoliciesListPage() {
       </Card>
 
       {/* Grid of policies */}
-      {filteredPolicies.length === 0 ? (
+      {loading ? (
+        <div className="py-12 text-center text-slate-500 font-semibold text-sm">Loading policies...</div>
+      ) : filteredPolicies.length === 0 ? (
         <Card className="flex flex-col items-center justify-center py-12 text-slate-400">
           <AlertCircle className="w-12 h-12 mb-3 text-slate-300" />
           <p className="font-bold text-sm text-slate-700">No Policies Located</p>
@@ -95,8 +99,7 @@ export default function EmployeePoliciesListPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredPolicies.map((p) => {
-            const policyState = progress?.policyProgress.find((pp) => pp.policyId === p.id);
-            const isAcknowledged = policyState?.status === 'ACKNOWLEDGED';
+            const isAcknowledged = p.isAcknowledged;
 
             return (
               <Card key={p.id} className="flex flex-col justify-between p-5 border border-slate-100 min-h-48 relative overflow-hidden">
@@ -130,7 +133,7 @@ export default function EmployeePoliciesListPage() {
                     {isAcknowledged && (
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
                         <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                        Signed on {formatDate(policyState?.acknowledgedAt)}
+                        Signed on {formatDate(p.acknowledgedAt)}
                       </p>
                     )}
                   </div>

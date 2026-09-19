@@ -68,6 +68,7 @@ model Session {
 
 model Policy {
   id          String        @id @default(cuid())
+  policyKey   String
   title       String
   category    String
   content     String
@@ -79,8 +80,10 @@ model Policy {
 
   acknowledgements PolicyAcknowledgement[]
 
+  @@unique([policyKey, version])
   @@index([status])
   @@index([category])
+  @@index([policyKey])
 }
 
 model PolicyAcknowledgement {
