@@ -6,81 +6,81 @@ const prisma = new PrismaClient();
 const usersToSeed = [
   {
     employeeId: 'ADM001',
-    name: 'Sarah Jenkins',
-    email: 'admin@amraleaf.com',
-    passwordRaw: 'AmraAdmin2026!',
+    name: 'Dilani Perera',
+    email: 'dilani.perera@amraleaf.com',
+    passwordRaw: 'Dilani#Admin2026!',
     role: 'ADMIN',
     department: 'Cybersecurity Operations',
     status: 'ACTIVE',
   },
   {
     employeeId: 'EMP001',
-    name: 'Liam Vance',
-    email: 'employee@amraleaf.com',
-    passwordRaw: 'AmraEmployee2026!',
+    name: 'Pathum Fernando',
+    email: 'pathum.fernando@amraleaf.com',
+    passwordRaw: 'Pathum#Fin2026!',
     role: 'EMPLOYEE',
     department: 'Accounts',
     status: 'ACTIVE',
   },
   {
     employeeId: 'EMP002',
-    name: 'Amina Al-Mansoor',
-    email: 'amina.al@amraleaf.com',
-    passwordRaw: 'AminaHR2026!',
+    name: 'Fathima Rishda',
+    email: 'fathima.rishda@amraleaf.com',
+    passwordRaw: 'Fathima#HR2026!',
     role: 'EMPLOYEE',
     department: 'Management',
     status: 'ACTIVE',
   },
   {
     employeeId: 'EMP003',
-    name: 'Chen Wei',
-    email: 'chen.wei@amraleaf.com',
-    passwordRaw: 'ChenDev2026!',
+    name: 'Tharshan Sivakumar',
+    email: 'tharshan.sivakumar@amraleaf.com',
+    passwordRaw: 'Tharshan#Dev2026!',
     role: 'EMPLOYEE',
     department: 'Management',
     status: 'ACTIVE',
   },
   {
     employeeId: 'EMP004',
-    name: 'Elena Rostova',
-    email: 'elena.rostova@amraleaf.com',
-    passwordRaw: 'ElenaSales2026!',
+    name: 'Dinusha Wickramasinghe',
+    email: 'dinusha.wickramasinghe@amraleaf.com',
+    passwordRaw: 'Dinusha#Sales2026!',
     role: 'EMPLOYEE',
     department: 'Marketing / Social Media',
     status: 'ACTIVE',
   },
   {
     employeeId: 'EMP005',
-    name: 'Marcus Brody',
-    email: 'marcus.brody@amraleaf.com',
-    passwordRaw: 'MarcusOps2026!',
+    name: 'Nuwan Kulasekara',
+    email: 'nuwan.kulasekara@amraleaf.com',
+    passwordRaw: 'Nuwan#Ops2026!',
     role: 'EMPLOYEE',
     department: 'Management',
     status: 'ACTIVE',
   },
   {
     employeeId: 'EMP006',
-    name: 'Priya Nair',
-    email: 'priya.nair@amraleaf.com',
-    passwordRaw: 'PriyaCS2026!',
+    name: 'Vithushana Selvarajah',
+    email: 'vithushana.selvarajah@amraleaf.com',
+    passwordRaw: 'Vithu#CS2026!',
     role: 'EMPLOYEE',
     department: 'Front Office / Service',
     status: 'ACTIVE',
   },
   {
     employeeId: 'EMP007',
-    name: 'Jackson Frost',
-    email: 'jackson.frost@amraleaf.com',
-    passwordRaw: 'JacksonIT2026!',
+    name: 'Mohomed Imran',
+    email: 'mohomed.imran@amraleaf.com',
+    passwordRaw: 'Mohomed#IT2026!',
     role: 'EMPLOYEE',
     department: 'Management',
     status: 'ACTIVE',
   },
   {
     employeeId: 'EMP008',
-    name: 'Isabella Torrez',
-    email: 'isabella.torrez@amraleaf.com',
-    passwordRaw: 'IsabellaLegal2026!',
+    name: 'Chathurika De Silva',
+    email: 'chathurika.desilva@amraleaf.com',
+    passwordRaw: 'Chathurika#Legal2026!',
     role: 'EMPLOYEE',
     department: 'Management',
     status: 'INACTIVE',
@@ -88,22 +88,17 @@ const usersToSeed = [
 ];
 
 async function main() {
-  console.log('Seeding initial users...');
+  console.log('Cleaning existing sessions & users...');
+  await prisma.session.deleteMany({});
+  await prisma.user.deleteMany({});
+
+  console.log('Seeding initial Sri Lankan users...');
 
   for (const user of usersToSeed) {
     const passwordHash = await bcrypt.hash(user.passwordRaw, 10);
 
-    await prisma.user.upsert({
-      where: { email: user.email },
-      update: {
-        employeeId: user.employeeId,
-        name: user.name,
-        passwordHash,
-        role: user.role,
-        department: user.department,
-        status: user.status,
-      },
-      create: {
+    await prisma.user.create({
+      data: {
         employeeId: user.employeeId,
         name: user.name,
         email: user.email,
@@ -113,7 +108,7 @@ async function main() {
         status: user.status,
       },
     });
-    console.log(`Seeded user: ${user.email} (${user.role}, ${user.status})`);
+    console.log(`Seeded user: ${user.name} <${user.email}> (${user.role})`);
   }
 
   console.log('Seeding completed successfully!');
