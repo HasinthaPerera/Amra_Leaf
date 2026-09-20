@@ -1,146 +1,340 @@
-import { ComplianceRecord, DashboardStats, User, Policy, TrainingModule, Quiz, UserProgress } from '@/types';
+import prisma from '@/lib/prisma';
+import { UserRole, UserStatus } from '@prisma/client';
 
-const USERS_KEY = 'amra_users';
-const POLICIES_KEY = 'amra_policies';
-const TRAINING_KEY = 'amra_training';
-const QUIZZES_KEY = 'amra_quizzes';
-const PROGRESS_KEY = 'amra_progress';
+export interface EmployeeComplianceResult {
+  userId: string;
+  name: string;
+  email: string;
+  department: string;
+  employeeId: string;
+  
+  // Percentages
+  policyCompletionRate: number;
+  trainingCompletionRate: number;
+  quizPassRate: number;
+  overallComplianceRate: number;
+  
+  overallStatus: 'COMPLIANT' | 'PENDING' | 'INCOMPLETE';
+  
+  // Raw counts for dashboard
+  policiesAcknowledged: number;
+  policiesRequired: number;
+  trainingCompleted: number;
+  trainingRequired: number;
+  quizzesPassed: number;
+  quizzesRequired: number;
+  
+  pendingActionCount: number;
 
-const getStoredData = <T>(key: string): T[] => {
-  if (typeof window === 'undefined') return [];
-  const stored = localStorage.getItem(key);
-  return stored ? JSON.parse(stored) : [];
-};
+  // Detailed breakdowns for audit/My Progress
+  policyDetails: {
+    id: string;
+    title: string;
+    version: string;
+    status: 'SIGNED' | 'PENDING';
+    acknowledgedAt: Date | null;
+  }[];
 
-export const complianceService = {
-  async getComplianceRecords(): Promise<ComplianceRecord[]> {
-    await new Promise(r => setTimeout(r, 400));
-    
-    const users = getStoredData<User>(USERS_KEY);
-    const policies = getStoredData<Policy>(POLICIES_KEY);
-    const trainingModules = getStoredData<TrainingModule>(TRAINING_KEY);
-    const quizzes = getStoredData<Quiz>(QUIZZES_KEY);
-    const progressList = getStoredData<UserProgress>(PROGRESS_KEY);
+  trainingDetails: {
+    id: string;
+    title: string;
+    status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+    completedAt: Date | null;
+  }[];
 
-    const publishedPolicies = policies.filter((p) => p.status === 'PUBLISHED');
-    const publishedTraining = trainingModules.filter((t) => t.status === 'PUBLISHED');
-    const publishedQuizzes = quizzes; // All quizzes
+  quizDetails: {
+    id: string;
+    title: string;
+    latestScore: number | null;
+    latestPercentage: number | null;
+    latestResult: 'PASSED' | 'FAILED' | null;
+    latestAttemptAt: Date | null;
+    requirementStatus: 'PASSED' | 'PENDING' | 'FAILED';
+    attemptsCount: number;
+  }[];
 
-    return users
-      .filter((u) => u.role === 'employee')
-      .map((employee) => {
-        const progress = progressList.find((p) => p.userId === employee.id);
-        
-        let policyRate = 0;
-        let trainingRate = 0;
-        let averageQuiz = 0;
+  trainingNeeds: {
+    title: string;
+    need: 'Policy Review Required' | 'Training Required' | 'Training In Progress' | 'Quiz Required' | 'Retraining Recommended' | 'No Current Training Need';
+    type: 'POLICY' | 'TRAINING' | 'QUIZ';
+  }[];
+}
 
-        if (progress) {
-          // 1. Policy rate
-          const ackedPolicies = progress.policyProgress.filter(
-            (pp) => pp.status === 'ACKNOWLEDGED' && publishedPolicies.some((p) => p.id === pp.policyId)
-          ).length;
-          policyRate = publishedPolicies.length > 0 
-            ? Math.round((ackedPolicies / publishedPolicies.length) * 100) 
-            : 100;
-
-          // 2. Training rate
-          const completedTraining = progress.trainingProgress.filter(
-            (tp) => tp.status === 'COMPLETED' && publishedTraining.some((t) => t.id === tp.moduleId)
-          ).length;
-          trainingRate = publishedTraining.length > 0 
-            ? Math.round((completedTraining / publishedTraining.length) * 100) 
-            : 100;
-
-          // 3. Quiz average score
-          const passingQuizzes = progress.quizResults.filter(
-            (qr) => qr.passed && publishedQuizzes.some((q) => q.id === qr.quizId)
-          ).length;
-          averageQuiz = publishedQuizzes.length > 0 
-            ? Math.round((passingQuizzes / publishedQuizzes.length) * 100) 
-            : 100;
-        }
-
-        const overallCompliance = Math.round((policyRate + trainingRate + averageQuiz) / 3);
-        
-        let status: 'COMPLIANT' | 'PENDING' | 'INCOMPLETE' = 'INCOMPLETE';
-        if (overallCompliance >= 85) {
-          status = 'COMPLIANT';
-        } else if (overallCompliance >= 50) {
-          status = 'PENDING';
-        }
-
-        if (employee.status === 'inactive') {
-          status = 'INCOMPLETE';
-        }
-
-        return {
-          userId: employee.id,
-          userName: employee.name,
-          userEmail: employee.email,
-          department: employee.department,
-          policyCompletionRate: policyRate,
-          trainingCompletionRate: trainingRate,
-          averageQuizScore: averageQuiz,
-          overallStatus: status,
-          lastActivity: employee.lastActivity,
-        };
-      });
-  },
-
-  async getDashboardStats(): Promise<DashboardStats> {
-    await new Promise(r => setTimeout(r, 450));
-    
-    const users = getStoredData<User>(USERS_KEY);
-    const policies = getStoredData<Policy>(POLICIES_KEY);
-    const trainingModules = getStoredData<TrainingModule>(TRAINING_KEY);
-    const quizzes = getStoredData<Quiz>(QUIZZES_KEY);
-    const progressList = getStoredData<UserProgress>(PROGRESS_KEY);
-
-    const employees = users.filter((u) => u.role === 'employee' && u.status === 'active');
-    const pubPolicies = policies.filter((p) => p.status === 'PUBLISHED').length;
-    const pubTraining = trainingModules.filter((t) => t.status === 'PUBLISHED').length;
-    
-    const publishedPolicies = policies.filter((p) => p.status === 'PUBLISHED');
-    const publishedTraining = trainingModules.filter((t) => t.status === 'PUBLISHED');
-    const publishedQuizzes = quizzes;
-
-    const activeRecords = employees.map(employee => {
-      const progress = progressList.find((p) => p.userId === employee.id);
-      
-      let policyRate = 0;
-      let trainingRate = 0;
-      let averageQuiz = 0;
-
-      if (progress) {
-        const ackedPolicies = progress.policyProgress.filter(
-          (pp) => pp.status === 'ACKNOWLEDGED' && publishedPolicies.some((p) => p.id === pp.policyId)
-        ).length;
-        policyRate = publishedPolicies.length > 0 ? (ackedPolicies / publishedPolicies.length) * 100 : 100;
-
-        const completedTraining = progress.trainingProgress.filter(
-          (tp) => tp.status === 'COMPLETED' && publishedTraining.some((t) => t.id === tp.moduleId)
-        ).length;
-        trainingRate = publishedTraining.length > 0 ? (completedTraining / publishedTraining.length) * 100 : 100;
-
-        const passingQuizzes = progress.quizResults.filter(
-          (qr) => qr.passed && publishedQuizzes.some((q) => q.id === qr.quizId)
-        ).length;
-        averageQuiz = publishedQuizzes.length > 0 ? (passingQuizzes / publishedQuizzes.length) * 100 : 100;
+export async function calculateEmployeeCompliance(userId: string): Promise<EmployeeComplianceResult | null> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      acknowledgements: { include: { policy: true } },
+      trainingProgress: true,
+      quizAttempts: {
+        orderBy: { submittedAt: 'desc' }
       }
+    }
+  });
 
-      return (policyRate + trainingRate + averageQuiz) / 3;
+  if (!user || user.role === UserRole.ADMIN || user.status === UserStatus.INACTIVE) {
+    return null;
+  }
+
+  // 1. Get current required policies (latest PUBLISHED version per policyKey)
+  const allPublishedPolicies = await prisma.policy.findMany({
+    where: { status: 'PUBLISHED' },
+    orderBy: { createdAt: 'desc' } // Assumes latest created is current
+  });
+
+  const currentPoliciesMap = new Map<string, typeof allPublishedPolicies[0]>();
+  for (const p of allPublishedPolicies) {
+    if (!currentPoliciesMap.has(p.policyKey)) {
+      currentPoliciesMap.set(p.policyKey, p);
+    }
+  }
+  const currentPolicies = Array.from(currentPoliciesMap.values());
+
+  // 2. Get current required training modules
+  const currentTrainingModules = await prisma.trainingModule.findMany({
+    where: { status: 'PUBLISHED' }
+  });
+
+  // 3. Get current required quizzes (linked to current training modules)
+  const trainingModuleIds = currentTrainingModules.map(t => t.id);
+  const currentQuizzes = await prisma.quiz.findMany({
+    where: {
+      status: 'PUBLISHED',
+      trainingId: { in: trainingModuleIds }
+    }
+  });
+
+  // Calculate Policy Compliance
+  let policiesAcknowledged = 0;
+  const policyDetails: EmployeeComplianceResult['policyDetails'] = [];
+  const trainingNeeds: EmployeeComplianceResult['trainingNeeds'] = [];
+  let pendingActionCount = 0;
+
+  for (const policy of currentPolicies) {
+    // Check if the user has acknowledged this EXACT policy row
+    const ack = user.acknowledgements.find(a => a.policyId === policy.id);
+    if (ack) {
+      policiesAcknowledged++;
+      policyDetails.push({
+        id: policy.id,
+        title: policy.title,
+        version: policy.version,
+        status: 'SIGNED',
+        acknowledgedAt: ack.acknowledgedAt
+      });
+    } else {
+      pendingActionCount++;
+      policyDetails.push({
+        id: policy.id,
+        title: policy.title,
+        version: policy.version,
+        status: 'PENDING',
+        acknowledgedAt: null
+      });
+      trainingNeeds.push({
+        title: policy.title,
+        need: 'Policy Review Required',
+        type: 'POLICY'
+      });
+    }
+  }
+
+  // Calculate Training Compliance
+  let trainingCompleted = 0;
+  const trainingDetails: EmployeeComplianceResult['trainingDetails'] = [];
+  
+  for (const module of currentTrainingModules) {
+    const progress = user.trainingProgress.find(p => p.trainingId === module.id);
+    
+    if (progress?.status === 'COMPLETED') {
+      trainingCompleted++;
+      trainingDetails.push({
+        id: module.id,
+        title: module.title,
+        status: 'COMPLETED',
+        completedAt: progress.completedAt
+      });
+    } else {
+      if (progress?.status !== 'IN_PROGRESS') pendingActionCount++;
+      trainingDetails.push({
+        id: module.id,
+        title: module.title,
+        status: progress?.status || 'NOT_STARTED',
+        completedAt: null
+      });
+
+      trainingNeeds.push({
+        title: module.title,
+        need: progress?.status === 'IN_PROGRESS' ? 'Training In Progress' : 'Training Required',
+        type: 'TRAINING'
+      });
+    }
+  }
+
+  // Calculate Quiz Compliance
+  let quizzesPassed = 0;
+  const quizDetails: EmployeeComplianceResult['quizDetails'] = [];
+
+  for (const quiz of currentQuizzes) {
+    const attempts = user.quizAttempts.filter(a => a.quizId === quiz.id);
+    const passedAny = attempts.some(a => a.passed);
+    const latestAttempt = attempts[0]; // Ordered desc by submittedAt
+    
+    // Check related training completion
+    const trainingProg = user.trainingProgress.find(p => p.trainingId === quiz.trainingId);
+    const isTrainingCompleted = trainingProg?.status === 'COMPLETED';
+
+    if (passedAny) {
+      quizzesPassed++;
+      quizDetails.push({
+        id: quiz.id,
+        title: quiz.title,
+        latestScore: latestAttempt?.score || null,
+        latestPercentage: latestAttempt?.percentage || null,
+        latestResult: latestAttempt?.passed ? 'PASSED' : 'FAILED',
+        latestAttemptAt: latestAttempt?.submittedAt || null,
+        requirementStatus: 'PASSED',
+        attemptsCount: attempts.length
+      });
+    } else {
+      pendingActionCount++;
+      quizDetails.push({
+        id: quiz.id,
+        title: quiz.title,
+        latestScore: latestAttempt?.score || null,
+        latestPercentage: latestAttempt?.percentage || null,
+        latestResult: latestAttempt ? (latestAttempt.passed ? 'PASSED' : 'FAILED') : null,
+        latestAttemptAt: latestAttempt?.submittedAt || null,
+        requirementStatus: latestAttempt ? 'FAILED' : 'PENDING',
+        attemptsCount: attempts.length
+      });
+
+      if (isTrainingCompleted) {
+        trainingNeeds.push({
+          title: quiz.title,
+          need: attempts.length > 0 ? 'Retraining Recommended' : 'Quiz Required',
+          type: 'QUIZ'
+        });
+      }
+    }
+  }
+
+  if (trainingNeeds.length === 0) {
+    trainingNeeds.push({
+      title: 'No Current Training Need',
+      need: 'No Current Training Need',
+      type: 'TRAINING'
     });
+  }
 
-    const avgCompliance = activeRecords.length > 0
-      ? Math.round(activeRecords.reduce((acc, val) => acc + val, 0) / activeRecords.length)
-      : 0;
+  // Zero-requirement safety and overall score
+  const policiesReq = currentPolicies.length;
+  const trainingReq = currentTrainingModules.length;
+  const quizzesReq = currentQuizzes.length;
 
+  const policyPct = policiesReq > 0 ? Math.round((policiesAcknowledged / policiesReq) * 100) : null;
+  const trainingPct = trainingReq > 0 ? Math.round((trainingCompleted / trainingReq) * 100) : null;
+  const quizPct = quizzesReq > 0 ? Math.round((quizzesPassed / quizzesReq) * 100) : null;
+
+  let applicableComponents = 0;
+  let totalPctSum = 0;
+
+  if (policyPct !== null) { applicableComponents++; totalPctSum += policyPct; }
+  if (trainingPct !== null) { applicableComponents++; totalPctSum += trainingPct; }
+  if (quizPct !== null) { applicableComponents++; totalPctSum += quizPct; }
+
+  let overallPct = 0;
+  let overallStatus: 'COMPLIANT' | 'PENDING' | 'INCOMPLETE' = 'INCOMPLETE';
+
+  if (applicableComponents === 0) {
+    overallPct = 0;
+    overallStatus = 'INCOMPLETE';
+  } else {
+    overallPct = Math.round(totalPctSum / applicableComponents);
+
+    // Determine Status
+    // COMPLIANT: all applicable components are exactly 100%
+    const isCompliant = 
+      (policyPct === null || policyPct === 100) &&
+      (trainingPct === null || trainingPct === 100) &&
+      (quizPct === null || quizPct === 100);
+
+    // Any Progress: employee has a row indicating progress for a CURRENT requirement
+    const hasAnyProgress = 
+      user.acknowledgements.some(a => currentPoliciesMap.has(a.policy.policyKey) && a.policyId === currentPoliciesMap.get(a.policy.policyKey)?.id) ||
+      user.trainingProgress.some(tp => trainingModuleIds.includes(tp.trainingId)) ||
+      user.quizAttempts.some(qa => currentQuizzes.map(q => q.id).includes(qa.quizId));
+
+    if (isCompliant) {
+      overallStatus = 'COMPLIANT';
+    } else if (hasAnyProgress) {
+      overallStatus = 'PENDING';
+    } else {
+      overallStatus = 'INCOMPLETE';
+    }
+  }
+
+  return {
+    userId: user.id,
+    name: user.name,
+    email: user.email,
+    department: user.department,
+    employeeId: user.employeeId,
+    policyCompletionRate: policyPct || 0,
+    trainingCompletionRate: trainingPct || 0,
+    quizPassRate: quizPct || 0,
+    overallComplianceRate: overallPct,
+    overallStatus,
+    policiesAcknowledged,
+    policiesRequired: policiesReq,
+    trainingCompleted,
+    trainingRequired: trainingReq,
+    quizzesPassed,
+    quizzesRequired: quizzesReq,
+    pendingActionCount,
+    policyDetails,
+    trainingDetails,
+    quizDetails,
+    trainingNeeds
+  };
+}
+
+export async function calculateOrganizationCompliance() {
+  const activeEmployees = await prisma.user.findMany({
+    where: { role: UserRole.EMPLOYEE, status: UserStatus.ACTIVE },
+    select: { id: true }
+  });
+
+  if (activeEmployees.length === 0) {
     return {
-      totalEmployees: employees.length,
-      publishedPolicies: pubPolicies,
-      trainingModules: pubTraining,
-      complianceRate: avgCompliance,
+      averageComplianceRate: 0,
+      totalActiveEmployees: 0,
+      compliantCount: 0,
+      pendingCount: 0,
+      incompleteCount: 0
     };
   }
-};
+
+  let totalScore = 0;
+  let compliantCount = 0;
+  let pendingCount = 0;
+  let incompleteCount = 0;
+
+  for (const emp of activeEmployees) {
+    const data = await calculateEmployeeCompliance(emp.id);
+    if (data) {
+      totalScore += data.overallComplianceRate;
+      if (data.overallStatus === 'COMPLIANT') compliantCount++;
+      else if (data.overallStatus === 'PENDING') pendingCount++;
+      else incompleteCount++;
+    }
+  }
+
+  return {
+    averageComplianceRate: Math.round(totalScore / activeEmployees.length),
+    totalActiveEmployees: activeEmployees.length,
+    compliantCount,
+    pendingCount,
+    incompleteCount
+  };
+}

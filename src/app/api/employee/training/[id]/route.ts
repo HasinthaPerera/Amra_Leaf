@@ -17,6 +17,9 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       include: {
         progress: {
           where: { userId: user.id }
+        },
+        quizzes: {
+          select: { id: true }
         }
       }
     });

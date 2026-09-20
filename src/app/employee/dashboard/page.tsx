@@ -1,77 +1,46 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   FileText, GraduationCap, HelpCircle, ShieldCheck, 
   AlertTriangle, ArrowRight, ShieldCheck as ShieldCheckIcon 
 } from 'lucide-react';
-import { useSimulation } from '@/context/SimulationContext';
 import { StatCard, Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge, ProgressBar } from '@/components/ui/Feedback';
 
 export default function EmployeeDashboardPage() {
-  const { currentUser, policies, trainingModules, quizzes, progressList } = useSimulation();
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Find user progress record
-  const progress = useMemo(() => {
-    if (!currentUser) return null;
-    return progressList.find((p) => p.userId === currentUser.id) || null;
-  }, [progressList, currentUser]);
+  useEffect(() => {
+    fetch('/api/employee/dashboard/stats')
+      .then(res => res.json())
+      .then(json => {
+        if (!json.error) {
+          setData(json);
+        }
+      })
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const publishedPolicies = useMemo(() => policies.filter(p => p.status === 'PUBLISHED'), [policies]);
-  const publishedTraining = useMemo(() => trainingModules.filter(t => t.status === 'PUBLISHED'), [trainingModules]);
+  if (loading) {
+    return <div className="py-20 text-center text-slate-500">Loading your dashboard...</div>;
+  }
 
-  // Compute stats for current employee
-  const stats = useMemo(() => {
-    if (!progress) {
-      return { policiesSigned: 0, trainingFinished: 0, quizzesPassed: 0, complianceRate: 0 };
-    }
+  if (!data) {
+    return <div className="py-20 text-center text-red-500">Failed to load dashboard data.</div>;
+  }
 
-    const signedCount = progress.policyProgress.filter(
-      (pp) => pp.status === 'ACKNOWLEDGED' && publishedPolicies.some(p => p.id === pp.policyId)
-    ).length;
-
-    const trainingFinishedCount = progress.trainingProgress.filter(
-      (tp) => tp.status === 'COMPLETED' && publishedTraining.some(t => t.id === tp.moduleId)
-    ).length;
-
-    const quizPassedCount = progress.quizResults.filter(
-      (qr) => qr.passed && quizzes.some(q => q.id === qr.quizId)
-    ).length;
-
-    const policyRate = publishedPolicies.length > 0 ? (signedCount / publishedPolicies.length) * 100 : 100;
-    const trainingRate = publishedTraining.length > 0 ? (trainingFinishedCount / publishedTraining.length) * 100 : 100;
-    const quizRate = quizzes.length > 0 ? (quizPassedCount / quizzes.length) * 100 : 100;
-
-    const complianceRate = Math.round((policyRate + trainingRate + quizRate) / 3);
-
-    return {
-      policiesSigned: signedCount,
-      trainingFinished: trainingFinishedCount,
-      quizzesPassed: quizPassedCount,
-      complianceRate,
-    };
-  }, [progress, publishedPolicies, publishedTraining, quizzes]);
-
-  // List of pending policies requiring signature
-  const pendingPolicies = useMemo(() => {
-    if (!progress) return [];
-    return publishedPolicies.filter(p => {
-      const state = progress.policyProgress.find(pp => pp.policyId === p.id);
-      return !state || state.status === 'PENDING';
-    });
-  }, [progress, publishedPolicies]);
-
-  // List of incomplete training modules
-  const pendingTraining = useMemo(() => {
-    if (!progress) return [];
-    return publishedTraining.filter(t => {
-      const state = progress.trainingProgress.find(tp => tp.moduleId === t.id);
-      return !state || state.status !== 'COMPLETED';
-    }).slice(0, 3);
-  }, [progress, publishedTraining]);
+  const {
+    policiesAcknowledged, policiesRequired,
+    trainingCompleted, trainingRequired,
+    quizzesPassed, quizzesRequired,
+    compliancePercentage, userName,
+    pendingPolicies, pendingTraining
+  } = data;
 
   return (
     <div className="space-y-6">
@@ -81,7 +50,7 @@ export default function EmployeeDashboardPage() {
         <div className="relative z-10 space-y-2">
           <p className="text-xxs font-black text-blue-400 uppercase tracking-widest leading-none">Security Awareness Console</p>
           <h2 className="text-xl md:text-2xl font-black uppercase tracking-tight">
-            Welcome back, <span className="text-blue-400">{currentUser?.name || 'Employee'}</span>
+            Welcome back, <span className="text-blue-400">{userName || 'Employee'}</span>
           </h2>
           <p className="text-xs text-slate-400 max-w-xl font-medium leading-relaxed">
             Keep your account protected. Read and sign pending policies, complete educational modules, and pass quizzes to maintain your compliance ranking.
@@ -93,31 +62,31 @@ export default function EmployeeDashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Signed Policies"
-          value={`${stats.policiesSigned} / ${publishedPolicies.length}`}
+          value={`${policiesAcknowledged} / ${policiesRequired}`}
           description="Read and acknowledged files"
           icon={<FileText className="w-5 h-5" />}
           variant="blue"
         />
         <StatCard
           title="Completed Lessons"
-          value={`${stats.trainingFinished} / ${publishedTraining.length}`}
+          value={`${trainingCompleted} / ${trainingRequired}`}
           description="Education modules finished"
           icon={<GraduationCap className="w-5 h-5" />}
           variant="emerald"
         />
         <StatCard
           title="Quizzes Passed"
-          value={`${stats.quizzesPassed} / ${quizzes.length}`}
+          value={`${quizzesPassed} / ${quizzesRequired}`}
           description="Assessed security tests"
           icon={<HelpCircle className="w-5 h-5" />}
           variant="purple"
         />
         <StatCard
           title="My Compliance Rate"
-          value={`${stats.complianceRate}%`}
+          value={`${compliancePercentage}%`}
           description="Average personal score"
           icon={<ShieldCheckIcon className="w-5 h-5" />}
-          variant={stats.complianceRate >= 85 ? 'emerald' : stats.complianceRate >= 50 ? 'amber' : 'red'}
+          variant={compliancePercentage >= 85 ? 'emerald' : compliancePercentage >= 50 ? 'amber' : 'red'}
         />
       </div>
 
@@ -147,7 +116,7 @@ export default function EmployeeDashboardPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {pendingPolicies.map((p) => (
+                {pendingPolicies.map((p: any) => (
                   <div key={p.id} className="flex justify-between items-center p-3 border border-slate-100 rounded-lg text-xs hover:border-slate-200 transition-colors">
                     <div>
                       <p className="font-bold text-slate-800 leading-snug">{p.title}</p>
@@ -184,10 +153,7 @@ export default function EmployeeDashboardPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {pendingTraining.map((t) => {
-                  const state = progress?.trainingProgress.find(tp => tp.moduleId === t.id);
-                  const progressVal = state?.progressPercent || 0;
-
+                {pendingTraining.map((t: any) => {
                   return (
                     <Card key={t.id} className="p-4 flex flex-col justify-between h-36 border border-slate-100">
                       <div>
@@ -197,11 +163,11 @@ export default function EmployeeDashboardPage() {
                       <div className="space-y-2">
                         <div className="flex justify-between items-center text-xxs font-bold text-slate-400">
                           <span>{t.estimatedDuration}</span>
-                          <span>{progressVal}% Done</span>
+                          <span>{t.progressPercent}% Done</span>
                         </div>
                         <div className="flex justify-between items-center gap-4">
                           <div className="flex-1">
-                            <ProgressBar value={progressVal} />
+                            <ProgressBar value={t.progressPercent} />
                           </div>
                           <Link href={`/employee/training/${t.id}`}>
                             <Button variant="outline" size="sm" className="py-1 px-2.5 text-xxs border border-slate-200">

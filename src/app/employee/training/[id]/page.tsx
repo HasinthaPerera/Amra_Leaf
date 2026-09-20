@@ -4,7 +4,6 @@ import React, { useMemo, useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, BookOpen, Clock, ShieldCheck, AlertCircle, PlayCircle, Award, ArrowRight } from 'lucide-react';
-import { useSimulation } from '@/context/SimulationContext';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/Feedback';
@@ -16,7 +15,6 @@ interface EmployeeTrainingDetailPageProps {
 
 export default function EmployeeTrainingDetailPage({ params }: EmployeeTrainingDetailPageProps) {
   const { id } = use(params);
-  const { quizzes } = useSimulation(); // Only for quiz logic
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [module, setModule] = useState<any>(null);
@@ -47,9 +45,7 @@ export default function EmployeeTrainingDetailPage({ params }: EmployeeTrainingD
   const isInProgress = status === 'IN_PROGRESS';
 
   // Find linked quiz
-  const linkedQuiz = useMemo(() => {
-    return quizzes.find((q) => q.trainingModuleId === id) || null;
-  }, [quizzes, id]);
+  const linkedQuiz = module?.quizzes && module.quizzes.length > 0 ? module.quizzes[0] : null;
 
   const handleStartModule = async () => {
     setLoading(true);
