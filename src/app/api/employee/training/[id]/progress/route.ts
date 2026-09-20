@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyEmployeeApi } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { logAuditActivity } from '@/lib/audit';
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const { user, response } = await verifyEmployeeApi();
@@ -85,6 +86,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
           completedAt: new Date(),
         }
       });
+
+      await logAuditActivity(user.id, 'TRAINING_COMPLETED', 'TrainingModule', id);
     }
 
     return NextResponse.json(newProgress);

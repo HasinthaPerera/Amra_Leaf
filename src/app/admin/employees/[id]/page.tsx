@@ -136,16 +136,14 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
                 <Select
                   label="Department"
                   options={[
-                    { value: 'Operations', label: 'Operations' },
-                    { value: 'Finance & Accounts', label: 'Finance & Accounts' },
-                    { value: 'Human Resources', label: 'Human Resources' },
-                    { value: 'Software Engineering', label: 'Software Engineering' },
-                    { value: 'Sales & Marketing', label: 'Sales & Marketing' },
-                    { value: 'Customer Success', label: 'Customer Success' },
-                    { value: 'IT Support & Administration', label: 'IT Support & Administration' },
-                    { value: 'Legal & Compliance', label: 'Legal & Compliance' },
+                    { value: 'Management', label: 'Management' },
+                    { value: 'Supervisor', label: 'Supervisor' },
                     { value: 'POS / Cashier', label: 'POS / Cashier' },
-                    { value: 'Front Office / Service', label: 'Front Office / Service' }
+                    { value: 'Front Office / Service', label: 'Front Office / Service' },
+                    { value: 'Kitchen', label: 'Kitchen' },
+                    { value: 'Delivery', label: 'Delivery' },
+                    { value: 'Accounts', label: 'Accounts' },
+                    { value: 'Marketing / Social Media', label: 'Marketing / Social Media' }
                   ]}
                   value={editForm.department}
                   onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminApi } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { logAuditActivity } from '@/lib/audit';
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   const { user, response } = await verifyAdminApi();
@@ -67,6 +68,8 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       where: { id },
       data: dataToUpdate,
     });
+
+    await logAuditActivity(user.id, 'TRAINING_UPDATED', 'TrainingModule', id);
 
     return NextResponse.json(updatedModule);
   } catch (error: any) {

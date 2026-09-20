@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyAdminApi } from '@/lib/auth';
+import { logAuditActivity } from '@/lib/audit';
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   const auth = await verifyAdminApi();
@@ -114,6 +115,12 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       where: { id },
       data: updateData
     });
+
+    const action = (updateData.status === 'PUBLISHED' && existingPolicy.status !== 'PUBLISHED')
+      ? 'POLICY_PUBLISHED'
+      : 'POLICY_UPDATED';
+      
+    await logAuditActivity(auth.user.id, action, 'Policy', id);
 
     return NextResponse.json(updatedPolicy);
   } catch (error: any) {

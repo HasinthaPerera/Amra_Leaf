@@ -220,6 +220,13 @@ export default function EmployeeDashboardPage() {
               Verify that Multi-Factor Authentication is active on your company email client. Avoid verifying login approvals via SMS. Use time-based authenticator apps instead.
             </div>
           </div>
+          
+          <div className="pt-4 border-t border-slate-100">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2.5">Privacy Notice</h3>
+            <p className="text-[9px] text-slate-500 font-medium leading-relaxed">
+              Your account details, policy signatures, training progress, and quiz results are securely recorded for internal security awareness and compliance monitoring. Access is restricted to authorized administrators.
+            </p>
+          </div>
         </div>
 
       </div>

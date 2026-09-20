@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminApi } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { logAuditActivity } from '@/lib/audit';
 
 export async function GET() {
   const { user, response } = await verifyAdminApi();
@@ -75,6 +76,8 @@ export async function POST(request: Request) {
       }
       return qz;
     });
+
+    await logAuditActivity(user.id, 'QUIZ_CREATED', 'Quiz', newQuiz.id);
 
     return NextResponse.json(newQuiz, { status: 201 });
   } catch (error) {

@@ -50,7 +50,7 @@ export default function AdminDashboardPage() {
         <StatCard
           title="Published Policies"
           value={stats.publishedPolicies}
-          description="Active corporate policies"
+          description="Active policies"
           icon={<FileText className="w-5 h-5" />}
           variant="blue"
         />

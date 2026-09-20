@@ -34,12 +34,6 @@ export function Navbar({ role, onMenuToggle, title }: NavbarProps) {
       </div>
 
       <div className="flex items-center gap-4">
-        {/* Simulator mode banner */}
-        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-xxs font-bold uppercase tracking-wider">
-          <Database className="w-3.5 h-3.5" />
-          Simulation Mode
-        </div>
-
         {/* Notification Icon */}
         <button className="relative p-1.5 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors focus:outline-none">
           <Bell className="w-4.5 h-4.5" />

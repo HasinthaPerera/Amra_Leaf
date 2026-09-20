@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyEmployeeApi } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { logAuditActivity } from '@/lib/audit';
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const { user, response } = await verifyEmployeeApi();
@@ -73,7 +74,6 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
     const passed = percentage >= quiz.passMark;
 
-    // Create a new Attempt!
     const newAttempt = await prisma.quizAttempt.create({
       data: {
         userId: user.id,
@@ -84,6 +84,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         passed
       }
     });
+
+    await logAuditActivity(user.id, 'QUIZ_SUBMITTED', 'Quiz', quiz.id);
 
     return NextResponse.json(newAttempt);
   } catch (error) {

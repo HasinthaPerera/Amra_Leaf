@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { verifyAdminApi } from '@/lib/auth';
+import { logAuditActivity } from '@/lib/audit';
 
 export async function GET() {
   const auth = await verifyAdminApi();
@@ -79,6 +80,8 @@ export async function POST(request: Request) {
         createdAt: true,
       },
     });
+
+    await logAuditActivity(auth.user.id, 'EMPLOYEE_CREATED', 'User', newEmployee.id);
 
     return NextResponse.json(newEmployee, { status: 201 });
   } catch (error: any) {

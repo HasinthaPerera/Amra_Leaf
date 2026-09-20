@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyAdminApi } from '@/lib/auth';
+import { logAuditActivity } from '@/lib/audit';
 
 export async function GET() {
   const auth = await verifyAdminApi();
@@ -61,6 +62,8 @@ export async function POST(request: Request) {
         publishedAt: status === 'PUBLISHED' ? new Date() : null,
       }
     });
+
+    await logAuditActivity(auth.user.id, 'POLICY_CREATED', 'Policy', newPolicy.id);
 
     return NextResponse.json(newPolicy, { status: 201 });
   } catch (error: any) {

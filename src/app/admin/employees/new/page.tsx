@@ -23,14 +23,14 @@ export default function NewEmployeePage() {
   const router = useRouter();
 
   const deptOptions = [
-    { value: 'Operations', label: 'Operations' },
-    { value: 'Finance & Accounts', label: 'Finance & Accounts' },
-    { value: 'Human Resources', label: 'Human Resources' },
-    { value: 'Software Engineering', label: 'Software Engineering' },
-    { value: 'Sales & Marketing', label: 'Sales & Marketing' },
-    { value: 'Customer Success', label: 'Customer Success' },
-    { value: 'IT Support & Administration', label: 'IT Support & Administration' },
-    { value: 'Legal & Compliance', label: 'Legal & Compliance' }
+    { value: 'Management', label: 'Management' },
+    { value: 'Supervisor', label: 'Supervisor' },
+    { value: 'POS / Cashier', label: 'POS / Cashier' },
+    { value: 'Front Office / Service', label: 'Front Office / Service' },
+    { value: 'Kitchen', label: 'Kitchen' },
+    { value: 'Delivery', label: 'Delivery' },
+    { value: 'Accounts', label: 'Accounts' },
+    { value: 'Marketing / Social Media', label: 'Marketing / Social Media' }
   ];
 
   const validate = () => {
@@ -148,7 +148,7 @@ export default function NewEmployeePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label="Corporate Email Address"
+                label="Email Address"
                 placeholder="e.g. employee@amraleaf.com"
                 required
                 type="email"

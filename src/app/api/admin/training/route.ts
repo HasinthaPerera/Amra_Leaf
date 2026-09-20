@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminApi } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { logAuditActivity } from '@/lib/audit';
 
 export async function GET() {
   const { user, response } = await verifyAdminApi();
@@ -48,6 +49,8 @@ export async function POST(request: Request) {
         status,
       },
     });
+
+    await logAuditActivity(user.id, 'TRAINING_CREATED', 'TrainingModule', newModule.id);
 
     return NextResponse.json(newModule, { status: 201 });
   } catch (error) {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import { logAuditActivity } from '@/lib/audit';
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
@@ -27,6 +28,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         policyVersion: policy.version
       }
     });
+
+    await logAuditActivity(user.id, 'POLICY_ACKNOWLEDGED', 'Policy', policy.id);
 
     return NextResponse.json(ack, { status: 201 });
   } catch (error: any) {
