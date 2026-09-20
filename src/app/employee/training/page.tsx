@@ -1,40 +1,48 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { GraduationCap, Search, Clock, Award, BookOpen, AlertCircle } from 'lucide-react';
-import { useSimulation } from '@/context/SimulationContext';
+import { Clock, Award, BookOpen, AlertCircle } from 'lucide-react';
 import { SearchBar } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/Feedback';
 
 export default function EmployeeTrainingListPage() {
-  const { currentUser, trainingModules, progressList } = useSimulation();
+  const [trainingModules, setTrainingModules] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
-  // Load progress record for current employee
-  const progress = useMemo(() => {
-    if (!currentUser) return null;
-    return progressList.find((p) => p.userId === currentUser.id) || null;
-  }, [progressList, currentUser]);
-
-  const publishedModules = useMemo(() => {
-    return trainingModules.filter((t) => t.status === 'PUBLISHED');
-  }, [trainingModules]);
+  useEffect(() => {
+    async function fetchModules() {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/employee/training');
+        if (res.ok) {
+          const data = await res.json();
+          setTrainingModules(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch training modules', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchModules();
+  }, []);
 
   // Filtered training modules list
   const filteredModules = useMemo(() => {
-    return publishedModules.filter((t) => {
+    return trainingModules.filter((t) => {
       const matchSearch = 
         t.title.toLowerCase().includes(search.toLowerCase()) || 
-        t.description.toLowerCase().includes(search.toLowerCase());
+        (t.description || '').toLowerCase().includes(search.toLowerCase());
       
-      const state = progress?.trainingProgress.find((tp) => tp.moduleId === t.id);
-      const isCompleted = state?.status === 'COMPLETED';
-      const isInProgress = state?.status === 'IN_PROGRESS';
-      const isNotStarted = !state || state.status === 'NOT_STARTED';
+      const userProgress = t.progress && t.progress.length > 0 ? t.progress[0] : null;
+      const isCompleted = userProgress?.status === 'COMPLETED';
+      const isInProgress = userProgress?.status === 'IN_PROGRESS';
+      const isNotStarted = !userProgress || userProgress.status === 'NOT_STARTED';
 
       let matchStatus = true;
       if (statusFilter === 'COMPLETED') matchStatus = isCompleted;
@@ -43,7 +51,7 @@ export default function EmployeeTrainingListPage() {
 
       return matchSearch && matchStatus;
     });
-  }, [publishedModules, search, statusFilter, progress]);
+  }, [trainingModules, search, statusFilter]);
 
   return (
     <div className="space-y-6">
@@ -79,7 +87,11 @@ export default function EmployeeTrainingListPage() {
       </Card>
 
       {/* Course Card Deck */}
-      {filteredModules.length === 0 ? (
+      {loading ? (
+        <Card className="flex flex-col items-center justify-center py-12 text-slate-400">
+          <p className="font-bold text-sm text-slate-700">Loading modules...</p>
+        </Card>
+      ) : filteredModules.length === 0 ? (
         <Card className="flex flex-col items-center justify-center py-12 text-slate-400">
           <AlertCircle className="w-12 h-12 mb-3 text-slate-300" />
           <p className="font-bold text-sm text-slate-700">No Lessons Found</p>
@@ -88,9 +100,9 @@ export default function EmployeeTrainingListPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredModules.map((t) => {
-            const state = progress?.trainingProgress.find((tp) => tp.moduleId === t.id);
-            const progressVal = state?.progressPercent || 0;
-            const status = state?.status || 'NOT_STARTED';
+            const userProgress = t.progress && t.progress.length > 0 ? t.progress[0] : null;
+            const progressVal = userProgress?.progressPercentage || 0;
+            const status = userProgress?.status || 'NOT_STARTED';
 
             return (
               <Card key={t.id} className="flex flex-col justify-between p-5 border border-slate-100 min-h-60 relative overflow-hidden">
@@ -98,7 +110,7 @@ export default function EmployeeTrainingListPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-xxs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5 text-slate-400" />
-                      {t.estimatedDuration}
+                      {t.estimatedMinutes} mins
                     </span>
                     
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xxs font-bold uppercase tracking-wider border ${

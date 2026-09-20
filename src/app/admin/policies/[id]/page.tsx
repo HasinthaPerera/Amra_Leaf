@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect, useMemo, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, ShieldCheck, AlertCircle } from 'lucide-react';
-import { useSimulation } from '@/context/SimulationContext';
+import { ArrowLeft, Save, ShieldCheck, AlertCircle, Users } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
@@ -15,34 +14,42 @@ interface EditPolicyPageProps {
 
 export default function EditPolicyPage({ params }: EditPolicyPageProps) {
   const { id } = use(params);
-  const { policies, updatePolicy } = useSimulation();
   const router = useRouter();
 
-  // Find target policy
-  const policy = useMemo(() => {
-    return policies.find((p) => p.id === id) || null;
-  }, [policies, id]);
+  const [policy, setPolicy] = useState<any>(null);
+  const [loadingPolicy, setLoadingPolicy] = useState(true);
 
+  const [policyKey, setPolicyKey] = useState('');
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [version, setVersion] = useState('');
   const [status, setStatus] = useState<'DRAFT' | 'PUBLISHED' | 'ARCHIVED'>('DRAFT');
   const [content, setContent] = useState('');
 
+  useEffect(() => {
+    fetch(`/api/admin/policies/${id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) {
+          setPolicy(data);
+          setPolicyKey(data.policyKey);
+          setTitle(data.title);
+          setCategory(data.category);
+          setVersion(data.version);
+          setStatus(data.status);
+          setContent(data.content);
+        }
+      })
+      .finally(() => setLoadingPolicy(false));
+  }, [id]);
+
+  const isPublished = policy?.status === 'PUBLISHED';
+
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
 
-  // Pre-fill form values
-  useEffect(() => {
-    if (policy) {
-      setTitle(policy.title);
-      setCategory(policy.category);
-      setVersion(policy.version);
-      setStatus(policy.status);
-      setContent(policy.content);
-    }
-  }, [policy]);
+
 
   const categories = [
     { value: 'Password Security', label: 'Password Security' },
@@ -54,6 +61,10 @@ export default function EditPolicyPage({ params }: EditPolicyPageProps) {
     { value: 'Incident Reporting', label: 'Incident Reporting' },
     { value: 'Social Media Security', label: 'Social Media Security' }
   ];
+
+  if (loadingPolicy) {
+    return <div className="py-20 text-center text-slate-500">Loading policy details...</div>;
+  }
 
   if (!policy) {
     return (
@@ -82,22 +93,35 @@ export default function EditPolicyPage({ params }: EditPolicyPageProps) {
     if (!validate()) return;
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
+    setErrors({});
 
     try {
-      updatePolicy(id, {
-        title,
-        category,
-        version,
-        status,
-        content
+      const res = await fetch(`/api/admin/policies/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          policyKey: isPublished ? undefined : policyKey,
+          title: isPublished ? undefined : title,
+          category,
+          version: isPublished ? undefined : version,
+          status,
+          content: isPublished ? undefined : content
+        })
       });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrors({ global: data.error || 'Failed to update policy record.' });
+        return;
+      }
+
       setSuccess(true);
       setTimeout(() => {
         router.push('/admin/policies');
       }, 1000);
     } catch (e) {
-      setErrors({ global: 'Failed to update policy record.' });
+      setErrors({ global: 'Failed to update policy record due to network error.' });
     } finally {
       setLoading(false);
     }
@@ -141,7 +165,26 @@ export default function EditPolicyPage({ params }: EditPolicyPageProps) {
               </p>
             )}
 
+            {isPublished && (
+              <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg text-xs font-semibold text-amber-700 mb-4 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <p>This policy is currently published. Core fields cannot be edited to preserve acknowledgement history. To create a new version, go to "Create New Policy" and use the same Policy Key.</p>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Input
+                  label="Policy Key (Unique ID)"
+                  placeholder="e.g. PASSWORD_SECURITY"
+                  required
+                  value={policyKey}
+                  onChange={(e) => setPolicyKey(e.target.value.toUpperCase().replace(/\s+/g, '_'))}
+                  error={errors.policyKey}
+                  disabled={isPublished}
+                />
+              </div>
+
               <div className="md:col-span-2">
                 <Input
                   label="Policy Document Title"
@@ -150,6 +193,7 @@ export default function EditPolicyPage({ params }: EditPolicyPageProps) {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   error={errors.title}
+                  disabled={isPublished}
                 />
               </div>
 
@@ -161,6 +205,7 @@ export default function EditPolicyPage({ params }: EditPolicyPageProps) {
                   value={version}
                   onChange={(e) => setVersion(e.target.value)}
                   error={errors.version}
+                  disabled={isPublished}
                 />
               </div>
             </div>
@@ -198,6 +243,7 @@ export default function EditPolicyPage({ params }: EditPolicyPageProps) {
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 error={errors.content}
+                disabled={isPublished}
               />
             </div>
 
@@ -224,6 +270,44 @@ export default function EditPolicyPage({ params }: EditPolicyPageProps) {
           </form>
         )}
       </Card>
+      {/* Acknowledgements Panel */}
+      {isPublished && policy.acknowledgements && (
+        <Card className="p-6 mt-6">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
+            <Users className="w-5 h-5 text-slate-500" />
+            <h3 className="text-sm font-bold text-slate-800">Acknowledgement History</h3>
+            <span className="ml-auto text-xs font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+              {policy.acknowledgements.length} Total
+            </span>
+          </div>
+          {policy.acknowledgements.length === 0 ? (
+            <p className="text-xs text-slate-500">No employees have acknowledged this version yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100 text-slate-400 uppercase">
+                    <th className="py-2 px-3">Employee Name</th>
+                    <th className="py-2 px-3">Employee ID</th>
+                    <th className="py-2 px-3 text-right">Acknowledged At</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+                  {policy.acknowledgements.map((ack: any) => (
+                    <tr key={ack.id}>
+                      <td className="py-3 px-3">{ack.user.name}</td>
+                      <td className="py-3 px-3">{ack.user.employeeId}</td>
+                      <td className="py-3 px-3 text-right">
+                        {new Date(ack.acknowledgedAt).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      )}
     </div>
   );
 }

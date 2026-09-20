@@ -1,21 +1,47 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { GraduationCap, Search, PlusCircle, CheckCircle, Edit2, AlertCircle, Eye, Clock } from 'lucide-react';
-import { useSimulation } from '@/context/SimulationContext';
+import { PlusCircle, CheckCircle, Edit2, AlertCircle, Eye, Clock } from 'lucide-react';
 import { SearchBar } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Tabs } from '@/components/ui/Navigation';
 import { StatusBadge } from '@/components/ui/Feedback';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
+import { TrainingModule } from '@/types';
 
 export default function TrainingListPage() {
-  const { trainingModules, updateTraining } = useSimulation();
+  const [trainingModules, setTrainingModules] = useState<TrainingModule[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('ALL');
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    async function fetchModules() {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/admin/training');
+        if (res.ok) {
+          const data = await res.json();
+          // Map to match frontend format if needed, though they align well
+          const mapped = data.map((t: any) => ({
+            ...t,
+            estimatedDuration: `${t.estimatedMinutes} mins`,
+            updatedDate: new Date(t.updatedAt).toISOString().split('T')[0],
+          }));
+          setTrainingModules(mapped);
+        }
+      } catch (err) {
+        console.error('Failed to fetch training modules', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchModules();
+  }, [refreshKey]);
 
   // Compute counts for tab badges
   const counts = useMemo(() => {
@@ -37,7 +63,7 @@ export default function TrainingListPage() {
     return trainingModules.filter((t) => {
       const matchSearch = 
         t.title.toLowerCase().includes(search.toLowerCase()) || 
-        t.description.toLowerCase().includes(search.toLowerCase());
+        (t.description || '').toLowerCase().includes(search.toLowerCase());
       
       const matchTab = activeTab === 'ALL' || t.status === activeTab;
       
@@ -49,8 +75,19 @@ export default function TrainingListPage() {
     return trainingModules.find(t => t.id === selectedModule) || null;
   }, [trainingModules, selectedModule]);
 
-  const publishModule = (id: string) => {
-    updateTraining(id, { status: 'PUBLISHED' });
+  const publishModule = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/training/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'PUBLISHED' }),
+      });
+      if (res.ok) {
+        setRefreshKey(k => k + 1);
+      }
+    } catch (err) {
+      console.error('Failed to publish', err);
+    }
   };
 
   return (
@@ -83,7 +120,11 @@ export default function TrainingListPage() {
 
       {/* Training Table Card */}
       <Card className="p-0 overflow-hidden">
-        {filteredModules.length === 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+            <p className="font-bold text-sm text-slate-700">Loading...</p>
+          </div>
+        ) : filteredModules.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-slate-400">
             <AlertCircle className="w-12 h-12 mb-3 text-slate-300" />
             <p className="font-bold text-sm text-slate-700">No Modules Found</p>

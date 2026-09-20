@@ -3,14 +3,13 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, ShieldCheck } from 'lucide-react';
-import { useSimulation } from '@/context/SimulationContext';
 import { Button } from '@/components/ui/Button';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Breadcrumb } from '@/components/ui/Navigation';
 
 export default function NewPolicyPage() {
-  const { addPolicy } = useSimulation();
+  const [policyKey, setPolicyKey] = useState('');
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Password Security');
   const [version, setVersion] = useState('v1.0');
@@ -35,6 +34,7 @@ export default function NewPolicyPage() {
 
   const validate = () => {
     const errs: Record<string, string> = {};
+    if (!policyKey.trim()) errs.policyKey = 'Policy Key is required';
     if (!title.trim()) errs.title = 'Policy title is required';
     if (!version.trim()) errs.version = 'Version tag is required';
     if (!content.trim()) errs.content = 'Policy document content is required';
@@ -47,22 +47,35 @@ export default function NewPolicyPage() {
     if (!validate()) return;
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
+    setErrors({});
 
     try {
-      addPolicy({
-        title,
-        category,
-        version,
-        status,
-        content
+      const res = await fetch('/api/admin/policies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          policyKey,
+          title,
+          category,
+          version,
+          status,
+          content
+        })
       });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrors({ global: data.error || 'Failed to save policy document.' });
+        return;
+      }
+
       setSuccess(true);
       setTimeout(() => {
         router.push('/admin/policies');
       }, 1000);
     } catch (e) {
-      setErrors({ global: 'Failed to save policy document.' });
+      setErrors({ global: 'Failed to save policy document due to network error.' });
     } finally {
       setLoading(false);
     }
@@ -107,6 +120,17 @@ export default function NewPolicyPage() {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Input
+                  label="Policy Key (Unique ID)"
+                  placeholder="e.g. PASSWORD_SECURITY"
+                  required
+                  value={policyKey}
+                  onChange={(e) => setPolicyKey(e.target.value.toUpperCase().replace(/\s+/g, '_'))}
+                  error={errors.policyKey}
+                />
+              </div>
+
               <div className="md:col-span-2">
                 <Input
                   label="Policy Document Title"

@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Plus, Trash2, HelpCircle } from 'lucide-react';
-import { useSimulation } from '@/context/SimulationContext';
 import { Button } from '@/components/ui/Button';
-import { Input, Select, Textarea } from '@/components/ui/Input';
+import { Input, Select } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Breadcrumb } from '@/components/ui/Navigation';
 
@@ -16,12 +15,12 @@ interface FormQuestion {
 }
 
 export default function NewQuizPage() {
-  const { addQuiz, trainingModules } = useSimulation();
   const router = useRouter();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [trainingModuleId, setTrainingModuleId] = useState('');
+  const [trainingModules, setTrainingModules] = useState<{value: string, label: string}[]>([]);
   
   // Start with 1 blank question
   const [questions, setQuestions] = useState<FormQuestion[]>([
@@ -32,11 +31,21 @@ export default function NewQuizPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
 
-  // Dropdown list of training modules
-  const moduleOptions = useMemo(() => {
-    const opts = trainingModules.map(t => ({ value: t.id, label: t.title }));
-    return [{ value: '', label: 'Unlinked / General Security' }, ...opts];
-  }, [trainingModules]);
+  useEffect(() => {
+    async function loadTrainings() {
+      try {
+        const res = await fetch('/api/admin/training');
+        if (res.ok) {
+          const data = await res.json();
+          const opts = data.map((t: any) => ({ value: t.id, label: t.title }));
+          setTrainingModules([{ value: '', label: 'Unlinked / General Security' }, ...opts]);
+        }
+      } catch (err) {
+        console.error('Failed to load training modules', err);
+      }
+    }
+    loadTrainings();
+  }, []);
 
   const handleAddQuestion = () => {
     setQuestions([
@@ -92,15 +101,14 @@ export default function NewQuizPage() {
     if (!validate()) return;
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
 
-    // Construct final payload
     const quizPayload = {
       title,
       description,
-      trainingModuleId: trainingModuleId || undefined,
+      trainingId: trainingModuleId || undefined,
+      passMark: 70,
+      status: 'PUBLISHED',
       questions: questions.map((q, idx) => ({
-        id: `Q_NEW_${idx + 1}`,
         question: q.question,
         options: q.options,
         correctAnswer: q.correctAnswer
@@ -108,11 +116,20 @@ export default function NewQuizPage() {
     };
 
     try {
-      addQuiz(quizPayload);
-      setSuccess(true);
-      setTimeout(() => {
-        router.push('/admin/quizzes');
-      }, 1000);
+      const res = await fetch('/api/admin/quizzes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(quizPayload)
+      });
+      if (res.ok) {
+        setSuccess(true);
+        setTimeout(() => {
+          router.push('/admin/quizzes');
+        }, 1000);
+      } else {
+        const errData = await res.json();
+        setErrors({ global: errData.error || 'Failed to create quiz record.' });
+      }
     } catch (e) {
       setErrors({ global: 'Failed to create quiz record.' });
     } finally {
@@ -121,7 +138,7 @@ export default function NewQuizPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto pb-12">
       {/* Breadcrumb */}
       <Breadcrumb
         items={[
@@ -178,7 +195,7 @@ export default function NewQuizPage() {
               <div>
                 <Select
                   label="Link Training Module"
-                  options={moduleOptions}
+                  options={trainingModules}
                   value={trainingModuleId}
                   onChange={(e) => setTrainingModuleId(e.target.value)}
                 />

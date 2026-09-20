@@ -1,23 +1,30 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { PlusCircle, Search, Trash2, ShieldAlert, UserPlus, Eye } from 'lucide-react';
-import { useSimulation } from '@/context/SimulationContext';
 import { SearchBar } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/Feedback';
 import { Card } from '@/components/ui/Card';
 
 export default function EmployeesListPage() {
-  const { users, updateEmployee } = useSimulation();
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState('ALL');
 
-  // Compute list of employees only (excluding admins)
-  const employees = useMemo(() => {
-    return users.filter((u) => u.role === 'employee');
-  }, [users]);
+  useEffect(() => {
+    fetch('/api/admin/employees')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setEmployees(data);
+        }
+      })
+      .catch(err => console.error('Error fetching employees:', err))
+      .finally(() => setLoading(false));
+  }, []);
 
   // Dynamic list of departments for filtering
   const departments = useMemo(() => {
@@ -40,9 +47,20 @@ export default function EmployeesListPage() {
     });
   }, [employees, search, deptFilter]);
 
-  const toggleStatus = (id: string, currentStatus: 'active' | 'inactive') => {
-    const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
-    updateEmployee(id, { status: nextStatus });
+  const toggleStatus = async (id: string, currentStatus: 'ACTIVE' | 'INACTIVE') => {
+    const nextStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    try {
+      const res = await fetch(`/api/admin/employees/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      if (res.ok) {
+        setEmployees(prev => prev.map(emp => emp.id === id ? { ...emp, status: nextStatus } : emp));
+      }
+    } catch (error) {
+      console.error('Failed to change status:', error);
+    }
   };
 
   const formatDate = (isoStr: string) => {
@@ -112,7 +130,7 @@ export default function EmployeesListPage() {
                   <th className="px-5 py-3.5 font-semibold">Name & Email</th>
                   <th className="px-5 py-3.5 font-semibold">Department</th>
                   <th className="px-5 py-3.5 font-semibold">Status</th>
-                  <th className="px-5 py-3.5 font-semibold">Last Active</th>
+                  <th className="px-5 py-3.5 font-semibold">Created Date</th>
                   <th className="px-5 py-3.5 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
@@ -133,7 +151,7 @@ export default function EmployeesListPage() {
                       <StatusBadge status={emp.status} />
                     </td>
                     <td className="px-5 py-4 text-xxs font-semibold text-slate-400">
-                      {formatDate(emp.lastActivity)}
+                      {formatDate(emp.createdAt)}
                     </td>
                     <td className="px-5 py-4 text-right flex items-center justify-end gap-2">
                       <Link href={`/admin/employees/${emp.id}`}>
@@ -147,16 +165,16 @@ export default function EmployeesListPage() {
                         </Button>
                       </Link>
                       <Button
-                        variant={emp.status === 'active' ? 'ghost' : 'success'}
+                        variant={emp.status === 'ACTIVE' ? 'ghost' : 'success'}
                         size="sm"
                         onClick={() => toggleStatus(emp.id, emp.status)}
                         className={`py-1 text-xs font-bold ${
-                          emp.status === 'active' 
+                          emp.status === 'ACTIVE' 
                             ? 'text-red-500 hover:bg-red-50 hover:text-red-600' 
                             : 'text-emerald-600 border border-emerald-200 hover:bg-emerald-50'
                         }`}
                       >
-                        {emp.status === 'active' ? 'Deactivate' : 'Activate'}
+                        {emp.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
                       </Button>
                     </td>
                   </tr>

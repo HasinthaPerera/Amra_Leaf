@@ -1,69 +1,37 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   ShieldCheck, FileText, GraduationCap, 
   HelpCircle, Calendar, Check, AlertTriangle, ArrowRight 
 } from 'lucide-react';
-import { useSimulation } from '@/context/SimulationContext';
 import { Card, StatCard } from '@/components/ui/Card';
 import { StatusBadge, ProgressBar } from '@/components/ui/Feedback';
 import { Breadcrumb } from '@/components/ui/Navigation';
 
 export default function EmployeeProgressPage() {
-  const { currentUser, progressList, policies, trainingModules, quizzes } = useSimulation();
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Load progress record for current employee
-  const progress = useMemo(() => {
-    if (!currentUser) return null;
-    return progressList.find((p) => p.userId === currentUser.id) || null;
-  }, [progressList, currentUser]);
+  useEffect(() => {
+    fetch('/api/employee/compliance')
+      .then(res => res.json())
+      .then(json => {
+        if (!json.error) {
+          setData(json);
+        }
+      })
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const publishedPolicies = useMemo(() => policies.filter(p => p.status === 'PUBLISHED'), [policies]);
-  const publishedTraining = useMemo(() => trainingModules.filter(t => t.status === 'PUBLISHED'), [trainingModules]);
-
-  // Compute percentages
-  const stats = useMemo(() => {
-    if (!progress) {
-      return { policiesSigned: 0, trainingFinished: 0, quizzesPassed: 0, complianceRate: 0 };
-    }
-
-    const signedCount = progress.policyProgress.filter(
-      (pp) => pp.status === 'ACKNOWLEDGED' && publishedPolicies.some(p => p.id === pp.policyId)
-    ).length;
-
-    const trainingFinishedCount = progress.trainingProgress.filter(
-      (tp) => tp.status === 'COMPLETED' && publishedTraining.some(t => t.id === tp.moduleId)
-    ).length;
-
-    const quizPassedCount = progress.quizResults.filter(
-      (qr) => qr.passed && quizzes.some(q => q.id === qr.quizId)
-    ).length;
-
-    const policyRate = publishedPolicies.length > 0 ? Math.round((signedCount / publishedPolicies.length) * 100) : 100;
-    const trainingRate = publishedTraining.length > 0 ? Math.round((trainingFinishedCount / publishedTraining.length) * 100) : 100;
-    const quizRate = quizzes.length > 0 ? Math.round((quizPassedCount / quizzes.length) * 100) : 100;
-
-    const complianceRate = Math.round((policyRate + trainingRate + quizRate) / 3);
-
-    return {
-      policiesSigned: signedCount,
-      trainingFinished: trainingFinishedCount,
-      quizzesPassed: quizPassedCount,
-      complianceRate,
-      policyRate,
-      trainingRate,
-      quizRate,
-    };
-  }, [progress, publishedPolicies, publishedTraining, quizzes]);
-
-  const formatDate = (isoStr?: string) => {
+  const formatDate = (isoStr?: string | Date | null) => {
     if (!isoStr) return 'Pending';
     try {
       return new Date(isoStr).toLocaleDateString() + ' ' + new Date(isoStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     } catch {
-      return isoStr;
+      return String(isoStr);
     }
   };
 
@@ -75,17 +43,16 @@ export default function EmployeeProgressPage() {
 
   // Compile a unified history timeline of activities
   const accomplishments = useMemo(() => {
-    if (!progress) return [];
+    if (!data) return [];
     
     const items: { type: string; title: string; date: string; tag: string }[] = [];
 
     // Add signed policies
-    progress.policyProgress.forEach((pp) => {
-      if (pp.status === 'ACKNOWLEDGED' && pp.acknowledgedAt) {
-        const doc = policies.find(p => p.id === pp.policyId);
+    data.policyDetails.forEach((pp: any) => {
+      if (pp.status === 'SIGNED' && pp.acknowledgedAt) {
         items.push({
           type: 'policy',
-          title: `Signed policy: ${doc?.title || pp.policyId}`,
+          title: `Signed policy: ${pp.title}`,
           date: pp.acknowledgedAt,
           tag: 'Signed'
         });
@@ -93,12 +60,11 @@ export default function EmployeeProgressPage() {
     });
 
     // Add completed training
-    progress.trainingProgress.forEach((tp) => {
+    data.trainingDetails.forEach((tp: any) => {
       if (tp.status === 'COMPLETED' && tp.completedAt) {
-        const mod = trainingModules.find(t => t.id === tp.moduleId);
         items.push({
           type: 'training',
-          title: `Completed lesson: ${mod?.title || tp.moduleId}`,
+          title: `Completed lesson: ${tp.title}`,
           date: tp.completedAt,
           tag: 'Finished'
         });
@@ -106,18 +72,33 @@ export default function EmployeeProgressPage() {
     });
 
     // Add passed quizzes
-    progress.quizResults.forEach((qr) => {
-      const qz = quizzes.find(q => q.id === qr.quizId);
-      items.push({
-        type: 'quiz',
-        title: `Passed quiz: ${qz?.title || qr.quizId} (Grade: ${qr.percentage}%)`,
-        date: qr.submittedAt,
-        tag: qr.passed ? 'PASSED' : 'FAILED'
-      });
+    data.quizDetails.forEach((qr: any) => {
+      if (qr.attemptsCount > 0 && qr.latestAttemptAt) {
+        items.push({
+          type: 'quiz',
+          title: `Quiz Attempt: ${qr.title} (Grade: ${qr.latestPercentage}%)`,
+          date: qr.latestAttemptAt,
+          tag: qr.latestResult
+        });
+      }
     });
 
     return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [progress, policies, trainingModules, quizzes]);
+  }, [data]);
+
+  if (loading) {
+    return <div className="py-20 text-center text-slate-500">Loading your progress...</div>;
+  }
+
+  if (!data) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+        <AlertTriangle className="w-12 h-12 mb-3 text-slate-300" />
+        <h2 className="font-bold text-sm text-slate-700">No Records Found</h2>
+        <p className="text-xs text-slate-400">We could not retrieve your compliance data.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -142,22 +123,22 @@ export default function EmployeeProgressPage() {
         <Card className="lg:col-span-1 p-5 flex flex-col justify-between border-l-4 border-l-blue-600 min-h-64">
           <div className="space-y-4">
             <h3 className="text-xs font-bold text-slate-450 uppercase tracking-wider border-b border-slate-100 pb-2">
-              Security Rank
+              Overall Compliance
             </h3>
             
             <div className="text-center py-4">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Compliance Rate</span>
               <h4 className={`text-4xl font-black ${
-                stats.complianceRate >= 85 ? 'text-emerald-600' : stats.complianceRate >= 50 ? 'text-amber-500' : 'text-red-500'
+                data.overallComplianceRate >= 85 ? 'text-emerald-600' : data.overallComplianceRate >= 50 ? 'text-amber-500' : 'text-red-500'
               }`}>
-                {stats.complianceRate}%
+                {data.overallComplianceRate}%
               </h4>
             </div>
           </div>
 
           <div className="space-y-2.5 pt-4 border-t border-slate-100">
             <span className="block text-xxs font-bold text-slate-400 uppercase tracking-widest">Audited Status</span>
-            <StatusBadge status={getComplianceStatus(stats.complianceRate)} className="w-full justify-center" />
+            <StatusBadge status={data.overallStatus} className="w-full justify-center" />
           </div>
         </Card>
 
@@ -165,22 +146,22 @@ export default function EmployeeProgressPage() {
         <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatCard
             title="Policy Acknowledges"
-            value={`${stats.policiesSigned} / ${publishedPolicies.length}`}
-            description={`${stats.policyRate}% complete`}
+            value={`${data.policiesAcknowledged} / ${data.policiesRequired}`}
+            description={`${data.policyCompletionRate}% complete`}
             icon={<FileText className="w-5 h-5" />}
             variant="blue"
           />
           <StatCard
             title="Training Modules"
-            value={`${stats.trainingFinished} / ${publishedTraining.length}`}
-            description={`${stats.trainingRate}% complete`}
+            value={`${data.trainingCompleted} / ${data.trainingRequired}`}
+            description={`${data.trainingCompletionRate}% complete`}
             icon={<GraduationCap className="w-5 h-5" />}
             variant="emerald"
           />
           <StatCard
             title="Quiz Evaluations"
-            value={`${stats.quizzesPassed} / ${quizzes.length}`}
-            description={`${stats.quizRate}% passed`}
+            value={`${data.quizzesPassed} / ${data.quizzesRequired}`}
+            description={`${data.quizPassRate}% passed`}
             icon={<HelpCircle className="w-5 h-5" />}
             variant="purple"
           />
@@ -197,31 +178,26 @@ export default function EmployeeProgressPage() {
           </h3>
           
           <div className="space-y-3">
-            {publishedPolicies.map((p) => {
-              const state = progress?.policyProgress.find((pp) => pp.policyId === p.id);
-              const isAck = state?.status === 'ACKNOWLEDGED';
-
-              return (
-                <div key={p.id} className="flex justify-between items-center p-2.5 border border-slate-100 rounded-lg text-xs">
-                  <div className="truncate max-w-[65%]">
-                    <p className="font-bold text-slate-700 truncate">{p.title}</p>
-                    <p className="text-xxs text-slate-400">Ver: {p.version}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xxs font-bold uppercase tracking-wider ${
-                      isAck 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                        : 'bg-amber-50 text-amber-700 border-amber-100'
-                    }`}>
-                      {isAck ? 'Signed' : 'Pending'}
-                    </span>
-                    {isAck && (
-                      <p className="text-[9px] text-slate-400 mt-0.5 font-medium leading-none">{formatDate(state?.acknowledgedAt).split(' ')[0]}</p>
-                    )}
-                  </div>
+            {data.policyDetails.map((p: any) => (
+              <div key={p.id} className="flex justify-between items-center p-2.5 border border-slate-100 rounded-lg text-xs">
+                <div className="truncate max-w-[65%]">
+                  <p className="font-bold text-slate-700 truncate">{p.title}</p>
+                  <p className="text-xxs text-slate-400">Ver: {p.version}</p>
                 </div>
-              );
-            })}
+                <div className="text-right">
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xxs font-bold uppercase tracking-wider ${
+                    p.status === 'SIGNED' 
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                      : 'bg-amber-50 text-amber-700 border-amber-100'
+                  }`}>
+                    {p.status === 'SIGNED' ? 'Signed' : 'Pending'}
+                  </span>
+                  {p.status === 'SIGNED' && (
+                    <p className="text-[9px] text-slate-400 mt-0.5 font-medium leading-none">{formatDate(p.acknowledgedAt).split(' ')[0]}</p>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </Card>
 
@@ -232,32 +208,25 @@ export default function EmployeeProgressPage() {
           </h3>
 
           <div className="space-y-3">
-            {publishedTraining.map((t) => {
-              const state = progress?.trainingProgress.find((tp) => tp.moduleId === t.id);
-              const isCompleted = state?.status === 'COMPLETED';
-              const progressPct = state?.progressPercent || 0;
-
-              return (
-                <div key={t.id} className="flex justify-between items-center p-2.5 border border-slate-100 rounded-lg text-xs">
-                  <div className="truncate max-w-[65%]">
-                    <p className="font-bold text-slate-700 truncate">{t.title}</p>
-                    <p className="text-xxs text-slate-400">{t.estimatedDuration}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xxs font-bold uppercase tracking-wider ${
-                      isCompleted 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                        : 'bg-slate-50 text-slate-500 border-slate-100'
-                    }`}>
-                      {isCompleted ? 'Finished' : `${progressPct}% done`}
-                    </span>
-                    {isCompleted && (
-                      <p className="text-[9px] text-slate-400 mt-0.5 font-medium leading-none">{formatDate(state?.completedAt).split(' ')[0]}</p>
-                    )}
-                  </div>
+            {data.trainingDetails.map((t: any) => (
+              <div key={t.id} className="flex justify-between items-center p-2.5 border border-slate-100 rounded-lg text-xs">
+                <div className="truncate max-w-[65%]">
+                  <p className="font-bold text-slate-700 truncate">{t.title}</p>
                 </div>
-              );
-            })}
+                <div className="text-right">
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xxs font-bold uppercase tracking-wider ${
+                    t.status === 'COMPLETED' 
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                      : 'bg-slate-50 text-slate-500 border-slate-100'
+                  }`}>
+                    {t.status === 'COMPLETED' ? 'Finished' : t.status.replace('_', ' ')}
+                  </span>
+                  {t.status === 'COMPLETED' && (
+                    <p className="text-[9px] text-slate-400 mt-0.5 font-medium leading-none">{formatDate(t.completedAt).split(' ')[0]}</p>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </Card>
 
@@ -268,36 +237,32 @@ export default function EmployeeProgressPage() {
           </h3>
 
           <div className="space-y-3">
-            {quizzes.map((q) => {
-              const result = progress?.quizResults.find((qr) => qr.quizId === q.id);
-
-              return (
-                <div key={q.id} className="flex justify-between items-center p-2.5 border border-slate-100 rounded-lg text-xs">
-                  <div className="truncate max-w-[65%]">
-                    <p className="font-bold text-slate-700 truncate">{q.title}</p>
-                    <p className="text-xxs text-slate-400">{q.questions.length} questions</p>
-                  </div>
-                  <div className="text-right">
-                    {result ? (
-                      <>
-                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xxs font-bold uppercase tracking-wider ${
-                          result.passed 
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                            : 'bg-red-50 text-red-700 border-red-100'
-                        }`}>
-                          {result.percentage}% - {result.passed ? 'PASSED' : 'FAILED'}
-                        </span>
-                        <p className="text-[9px] text-slate-400 mt-0.5 font-medium leading-none">{formatDate(result.submittedAt).split(' ')[0]}</p>
-                      </>
-                    ) : (
-                      <span className="px-1.5 py-0.5 rounded text-xxs font-bold uppercase tracking-wider bg-slate-50 text-slate-400 border border-slate-100">
-                        Unattempted
-                      </span>
-                    )}
-                  </div>
+            {data.quizDetails.map((q: any) => (
+              <div key={q.id} className="flex justify-between items-center p-2.5 border border-slate-100 rounded-lg text-xs">
+                <div className="truncate max-w-[65%]">
+                  <p className="font-bold text-slate-700 truncate">{q.title}</p>
+                  <p className="text-xxs text-slate-400">{q.attemptsCount} attempts</p>
                 </div>
-              );
-            })}
+                <div className="text-right">
+                  {q.attemptsCount > 0 ? (
+                    <>
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xxs font-bold uppercase tracking-wider ${
+                        q.requirementStatus === 'PASSED'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                          : 'bg-red-50 text-red-700 border-red-100'
+                      }`}>
+                        {q.latestPercentage}% - {q.requirementStatus}
+                      </span>
+                      <p className="text-[9px] text-slate-400 mt-0.5 font-medium leading-none">{formatDate(q.latestAttemptAt).split(' ')[0]}</p>
+                    </>
+                  ) : (
+                    <span className="px-1.5 py-0.5 rounded text-xxs font-bold uppercase tracking-wider bg-slate-50 text-slate-400 border border-slate-100">
+                      Unattempted
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </Card>
       </div>

@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   FileText, Search, PlusCircle, CheckCircle, 
   Archive, Edit2, AlertCircle, Eye 
 } from 'lucide-react';
-import { useSimulation } from '@/context/SimulationContext';
 import { SearchBar } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Tabs } from '@/components/ui/Navigation';
@@ -15,11 +14,54 @@ import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
 
 export default function PoliciesListPage() {
-  const { policies, publishPolicy, archivePolicy } = useSimulation();
+  const [policies, setPolicies] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [activeTab, setActiveTab] = useState('ALL');
   const [selectedPolicy, setSelectedPolicy] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchPolicies();
+  }, []);
+
+  const fetchPolicies = async () => {
+    try {
+      const res = await fetch('/api/admin/policies');
+      const data = await res.json();
+      if (Array.isArray(data)) setPolicies(data);
+    } catch (err) {
+      console.error('Failed to fetch policies', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const publishPolicy = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/policies/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'PUBLISHED' })
+      });
+      if (res.ok) fetchPolicies();
+    } catch (err) {
+      console.error('Failed to publish policy', err);
+    }
+  };
+
+  const archivePolicy = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/policies/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'ARCHIVED' })
+      });
+      if (res.ok) fetchPolicies();
+    } catch (err) {
+      console.error('Failed to archive policy', err);
+    }
+  };
 
   // Compute counts for tab badges
   const counts = useMemo(() => {
@@ -109,7 +151,9 @@ export default function PoliciesListPage() {
 
       {/* Policies Grid/List */}
       <Card className="p-0 overflow-hidden">
-        {filteredPolicies.length === 0 ? (
+        {loading ? (
+          <div className="py-12 text-center text-slate-500 font-semibold text-sm">Loading policies...</div>
+        ) : filteredPolicies.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-slate-400">
             <AlertCircle className="w-12 h-12 mb-3 text-slate-300" />
             <p className="font-bold text-sm text-slate-700">No Policies Found</p>
@@ -132,7 +176,11 @@ export default function PoliciesListPage() {
                   <tr key={p.id} className="hover:bg-slate-50/30">
                     <td className="px-5 py-4">
                       <p className="font-bold text-slate-800 leading-snug">{p.title}</p>
-                      <p className="text-xxs text-slate-400 font-bold uppercase">Version: {p.version}</p>
+                      <div className="flex gap-2 items-center text-xxs text-slate-400 font-bold uppercase mt-1">
+                        <span>Key: {p.policyKey}</span>
+                        <span>•</span>
+                        <span>Version: {p.version}</span>
+                      </div>
                     </td>
                     <td className="px-5 py-4 text-xs font-semibold text-slate-600">
                       {p.category}

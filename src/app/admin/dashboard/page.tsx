@@ -1,43 +1,40 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Users, FileText, GraduationCap, Percent, 
   PlusCircle, ShieldCheck, AlertTriangle, ArrowRight, UserPlus 
 } from 'lucide-react';
-import { useSimulation } from '@/context/SimulationContext';
 import { StatCard } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge, ProgressBar } from '@/components/ui/Feedback';
 
 export default function AdminDashboardPage() {
-  const { getDashboardStats, getComplianceRecords, policies, trainingModules } = useSimulation();
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const stats = useMemo(() => getDashboardStats(), [getDashboardStats]);
-  const complianceRecords = useMemo(() => getComplianceRecords(), [getComplianceRecords]);
-
-  // Find employees that require immediate attention (incomplete status or compliance < 60%)
-  const urgentEmployees = useMemo(() => {
-    return complianceRecords
-      .map(rec => {
-        // Recalculate combined score
-        const score = Math.round((rec.policyCompletionRate + rec.trainingCompletionRate + rec.averageQuizScore) / 3);
-        return { ...rec, overallScore: score };
+  useEffect(() => {
+    fetch('/api/admin/dashboard/stats')
+      .then(res => res.json())
+      .then(json => {
+        if (!json.error) {
+          setData(json);
+        }
       })
-      .filter(rec => rec.overallStatus === 'INCOMPLETE' || rec.overallScore < 60)
-      .sort((a, b) => a.overallScore - b.overallScore)
-      .slice(0, 5);
-  }, [complianceRecords]);
+      .catch(err => console.error('Error fetching dashboard stats:', err))
+      .finally(() => setLoading(false));
+  }, []);
 
-  // Get recent activity placeholders to populate feed
-  const recentPolicies = useMemo(() => {
-    return policies.slice(-3).reverse();
-  }, [policies]);
+  if (loading) {
+    return <div className="py-20 text-center text-slate-500">Loading dashboard...</div>;
+  }
 
-  const recentTraining = useMemo(() => {
-    return trainingModules.slice(-3).reverse();
-  }, [trainingModules]);
+  if (!data) {
+    return <div className="py-20 text-center text-red-500">Failed to load dashboard</div>;
+  }
+
+  const { stats, urgentEmployees, recentPolicies, recentTraining } = data;
 
   return (
     <div className="space-y-6">
@@ -53,7 +50,7 @@ export default function AdminDashboardPage() {
         <StatCard
           title="Published Policies"
           value={stats.publishedPolicies}
-          description="Active corporate policies"
+          description="Active policies"
           icon={<FileText className="w-5 h-5" />}
           variant="blue"
         />
@@ -135,7 +132,7 @@ export default function AdminDashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {urgentEmployees.map((emp) => (
+                  {urgentEmployees.map((emp: any) => (
                     <tr key={emp.userId} className="hover:bg-slate-50/50">
                       <td className="py-3.5">
                         <Link href={`/admin/employees/${emp.userId}`} className="font-bold text-slate-700 hover:text-blue-600 transition-colors">
@@ -173,7 +170,7 @@ export default function AdminDashboardPage() {
               Policy Activity
             </h2>
             <div className="space-y-3">
-              {recentPolicies.map((p) => (
+              {recentPolicies.map((p: any) => (
                 <div key={p.id} className="p-3 border border-slate-100 rounded-lg hover:border-slate-200 transition-colors">
                   <div className="flex justify-between items-start mb-1">
                     <Link href={`/admin/policies`} className="text-xs font-bold text-slate-700 hover:text-blue-600 transition-colors truncate max-w-[70%]">
@@ -200,7 +197,7 @@ export default function AdminDashboardPage() {
               Training Additions
             </h2>
             <div className="space-y-3">
-              {recentTraining.map((t) => (
+              {recentTraining.map((t: any) => (
                 <div key={t.id} className="p-3 border border-slate-100 rounded-lg hover:border-slate-200 transition-colors">
                   <div className="flex justify-between items-start mb-1">
                     <Link href={`/admin/training`} className="text-xs font-bold text-slate-700 hover:text-blue-600 transition-colors truncate max-w-[80%]">

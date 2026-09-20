@@ -19,7 +19,7 @@ const usersToSeed = [
     email: 'employee@amraleaf.com',
     passwordRaw: 'AmraEmployee2026!',
     role: 'EMPLOYEE',
-    department: 'Finance & Accounts',
+    department: 'Accounts',
     status: 'ACTIVE',
   },
   {
@@ -28,7 +28,7 @@ const usersToSeed = [
     email: 'amina.al@amraleaf.com',
     passwordRaw: 'AminaHR2026!',
     role: 'EMPLOYEE',
-    department: 'Human Resources',
+    department: 'Management',
     status: 'ACTIVE',
   },
   {
@@ -37,7 +37,7 @@ const usersToSeed = [
     email: 'chen.wei@amraleaf.com',
     passwordRaw: 'ChenDev2026!',
     role: 'EMPLOYEE',
-    department: 'Software Engineering',
+    department: 'Management',
     status: 'ACTIVE',
   },
   {
@@ -46,7 +46,7 @@ const usersToSeed = [
     email: 'elena.rostova@amraleaf.com',
     passwordRaw: 'ElenaSales2026!',
     role: 'EMPLOYEE',
-    department: 'Sales & Marketing',
+    department: 'Marketing / Social Media',
     status: 'ACTIVE',
   },
   {
@@ -55,7 +55,7 @@ const usersToSeed = [
     email: 'marcus.brody@amraleaf.com',
     passwordRaw: 'MarcusOps2026!',
     role: 'EMPLOYEE',
-    department: 'Operations',
+    department: 'Management',
     status: 'ACTIVE',
   },
   {
@@ -64,7 +64,7 @@ const usersToSeed = [
     email: 'priya.nair@amraleaf.com',
     passwordRaw: 'PriyaCS2026!',
     role: 'EMPLOYEE',
-    department: 'Customer Success',
+    department: 'Front Office / Service',
     status: 'ACTIVE',
   },
   {
@@ -73,7 +73,7 @@ const usersToSeed = [
     email: 'jackson.frost@amraleaf.com',
     passwordRaw: 'JacksonIT2026!',
     role: 'EMPLOYEE',
-    department: 'IT Support & Administration',
+    department: 'Management',
     status: 'ACTIVE',
   },
   {
@@ -82,7 +82,7 @@ const usersToSeed = [
     email: 'isabella.torrez@amraleaf.com',
     passwordRaw: 'IsabellaLegal2026!',
     role: 'EMPLOYEE',
-    department: 'Legal & Compliance',
+    department: 'Management',
     status: 'INACTIVE',
   },
 ];

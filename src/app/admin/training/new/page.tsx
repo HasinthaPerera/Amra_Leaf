@@ -3,17 +3,15 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, GraduationCap } from 'lucide-react';
-import { useSimulation } from '@/context/SimulationContext';
 import { Button } from '@/components/ui/Button';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Breadcrumb } from '@/components/ui/Navigation';
 
 export default function NewTrainingPage() {
-  const { addTraining } = useSimulation();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [estimatedDuration, setEstimatedDuration] = useState('10 mins');
+  const [estimatedDuration, setEstimatedDuration] = useState('10'); // Just the number now
   const [status, setStatus] = useState<'DRAFT' | 'PUBLISHED'>('DRAFT');
   const [content, setContent] = useState('');
 
@@ -26,7 +24,7 @@ export default function NewTrainingPage() {
     const errs: Record<string, string> = {};
     if (!title.trim()) errs.title = 'Module title is required';
     if (!description.trim()) errs.description = 'Brief description is required';
-    if (!estimatedDuration.trim()) errs.estimatedDuration = 'Duration is required (e.g. 10 mins)';
+    if (!estimatedDuration.trim()) errs.estimatedDuration = 'Duration is required (e.g. 10)';
     if (!content.trim()) errs.content = 'Module learning text content is required';
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -37,22 +35,31 @@ export default function NewTrainingPage() {
     if (!validate()) return;
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
 
     try {
-      addTraining({
-        title,
-        description,
-        estimatedDuration,
-        status,
-        content
+      const res = await fetch('/api/admin/training', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          description,
+          estimatedMinutes: estimatedDuration,
+          status,
+          content
+        }),
       });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to save training module');
+      }
+
       setSuccess(true);
       setTimeout(() => {
         router.push('/admin/training');
       }, 1000);
-    } catch (e) {
-      setErrors({ global: 'Failed to save training module.' });
+    } catch (e: any) {
+      setErrors({ global: e.message || 'Failed to save training module.' });
     } finally {
       setLoading(false);
     }
@@ -110,8 +117,9 @@ export default function NewTrainingPage() {
 
               <div>
                 <Input
-                  label="Estimated Duration"
-                  placeholder="e.g. 10 mins"
+                  label="Estimated Duration (minutes)"
+                  placeholder="e.g. 10"
+                  type="number"
                   required
                   value={estimatedDuration}
                   onChange={(e) => setEstimatedDuration(e.target.value)}

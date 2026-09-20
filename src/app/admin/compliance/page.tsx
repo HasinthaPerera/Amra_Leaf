@@ -1,34 +1,41 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { ShieldCheck, Search, ShieldAlert, ArrowUpDown, Eye } from 'lucide-react';
-import { usePathname } from 'next/navigation';
-import { useSimulation } from '@/context/SimulationContext';
 import { SearchBar } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge, ProgressBar } from '@/components/ui/Feedback';
 import { Card } from '@/components/ui/Card';
 
 export default function ComplianceMonitorPage() {
-  const { getComplianceRecords } = useSimulation();
+  const [records, setRecords] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [sortField, setSortField] = useState<'name' | 'compliance'>('name');
   const [sortAsc, setSortAsc] = useState(true);
 
-  // Load aggregated compliance records
-  const records = useMemo(() => {
-    return getComplianceRecords();
-  }, [getComplianceRecords]);
+  useEffect(() => {
+    fetch('/api/admin/compliance')
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) {
+          setRecords(data);
+        }
+      })
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, []);
 
   // Apply search and status filters
   const filteredRecords = useMemo(() => {
     return records
       .filter((rec) => {
         const matchSearch = 
-          rec.userName.toLowerCase().includes(search.toLowerCase()) || 
-          rec.userId.toLowerCase().includes(search.toLowerCase());
+          rec.name.toLowerCase().includes(search.toLowerCase()) || 
+          rec.employeeId.toLowerCase().includes(search.toLowerCase());
         
         const matchStatus = statusFilter === 'ALL' || rec.overallStatus === statusFilter;
         
@@ -37,13 +44,12 @@ export default function ComplianceMonitorPage() {
       .sort((a, b) => {
         if (sortField === 'name') {
           return sortAsc 
-            ? a.userName.localeCompare(b.userName) 
-            : b.userName.localeCompare(a.userName);
+            ? a.name.localeCompare(b.name) 
+            : b.name.localeCompare(a.name);
         } else {
-          // Calculate combined compliance rate
-          const complianceA = (a.policyCompletionRate + a.trainingCompletionRate + a.averageQuizScore) / 3;
-          const complianceB = (b.policyCompletionRate + b.trainingCompletionRate + b.averageQuizScore) / 3;
-          return sortAsc ? complianceA - complianceB : complianceB - complianceA;
+          return sortAsc 
+            ? a.overallComplianceRate - b.overallComplianceRate 
+            : b.overallComplianceRate - a.overallComplianceRate;
         }
       });
   }, [records, search, statusFilter, sortField, sortAsc]);
@@ -54,15 +60,6 @@ export default function ComplianceMonitorPage() {
     } else {
       setSortField(field);
       setSortAsc(true);
-    }
-  };
-
-  const formatDate = (isoStr?: string) => {
-    if (!isoStr) return 'Never';
-    try {
-      return new Date(isoStr).toLocaleDateString();
-    } catch {
-      return isoStr;
     }
   };
 
@@ -101,7 +98,9 @@ export default function ComplianceMonitorPage() {
 
       {/* Matrix Table */}
       <Card className="p-0 overflow-hidden">
-        {filteredRecords.length === 0 ? (
+        {loading ? (
+           <div className="py-12 text-center text-slate-500">Loading compliance data...</div>
+        ) : filteredRecords.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-slate-400">
             <ShieldAlert className="w-12 h-12 mb-3 text-slate-300" />
             <p className="font-bold text-sm text-slate-700">No Audits Found</p>
@@ -139,13 +138,11 @@ export default function ComplianceMonitorPage() {
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
                 {filteredRecords.map((rec) => {
-                  const combinedRate = Math.round((rec.policyCompletionRate + rec.trainingCompletionRate + rec.averageQuizScore) / 3);
-                  
                   return (
                     <tr key={rec.userId} className="hover:bg-slate-50/30">
                       <td className="px-5 py-4">
                         <Link href={`/admin/employees/${rec.userId}`} className="font-bold text-slate-800 hover:text-blue-600 transition-colors">
-                          {rec.userName}
+                          {rec.name}
                         </Link>
                         <p className="text-xxs text-slate-400 font-semibold">{rec.department}</p>
                       </td>
@@ -170,20 +167,20 @@ export default function ComplianceMonitorPage() {
 
                       <td className="px-5 py-4 text-center">
                         <div className="flex flex-col items-center">
-                          <span className="text-xs font-bold mb-1 text-slate-700">{rec.averageQuizScore}%</span>
+                          <span className="text-xs font-bold mb-1 text-slate-700">{rec.quizPassRate}%</span>
                           <div className="w-24">
-                            <ProgressBar value={rec.averageQuizScore} />
+                            <ProgressBar value={rec.quizPassRate} />
                           </div>
                         </div>
                       </td>
 
                       <td className="px-5 py-4 text-center">
                         <span className={`text-sm font-extrabold ${
-                          combinedRate >= 85 ? 'text-emerald-600' :
-                          combinedRate >= 50 ? 'text-amber-500' :
+                          rec.overallComplianceRate >= 85 ? 'text-emerald-600' :
+                          rec.overallComplianceRate >= 50 ? 'text-amber-500' :
                           'text-red-500'
                         }`}>
-                          {combinedRate}%
+                          {rec.overallComplianceRate}%
                         </span>
                       </td>
 

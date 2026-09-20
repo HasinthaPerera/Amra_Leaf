@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, use } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Plus, Trash2, HelpCircle, AlertCircle } from 'lucide-react';
-import { useSimulation } from '@/context/SimulationContext';
+import { ArrowLeft, Save, Plus, Trash2, HelpCircle, AlertCircle, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
@@ -22,44 +21,63 @@ interface EditQuizPageProps {
 
 export default function EditQuizPage({ params }: EditQuizPageProps) {
   const { id } = use(params);
-  const { quizzes, updateQuiz, trainingModules } = useSimulation();
   const router = useRouter();
 
-  // Find target quiz
-  const quiz = useMemo(() => {
-    return quizzes.find((q) => q.id === id) || null;
-  }, [quizzes, id]);
-
+  const [quiz, setQuiz] = useState<any>(null);
+  const [loadingData, setLoadingData] = useState(true);
+  
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [trainingModuleId, setTrainingModuleId] = useState('');
   const [questions, setQuestions] = useState<FormQuestion[]>([]);
+  
+  const [trainingModules, setTrainingModules] = useState<{value: string, label: string}[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
 
-  // Pre-fill form values
   useEffect(() => {
-    if (quiz) {
-      setTitle(quiz.title);
-      setDescription(quiz.description);
-      setTrainingModuleId(quiz.trainingModuleId || '');
-      setQuestions(
-        quiz.questions.map((q) => ({
-          id: q.id,
-          question: q.question,
-          options: [...q.options] as [string, string, string, string],
-          correctAnswer: q.correctAnswer
-        }))
-      );
-    }
-  }, [quiz]);
+    async function loadData() {
+      try {
+        const [quizRes, trainingRes] = await Promise.all([
+          fetch(`/api/admin/quizzes/${id}`),
+          fetch('/api/admin/training')
+        ]);
+        
+        if (quizRes.ok) {
+          const qz = await quizRes.json();
+          setQuiz(qz);
+          setTitle(qz.title);
+          setDescription(qz.description);
+          setTrainingModuleId(qz.trainingId || '');
+          setQuestions(
+            qz.questions.map((q: any) => ({
+              id: q.id,
+              question: q.question,
+              options: [q.optionA, q.optionB, q.optionC, q.optionD],
+              correctAnswer: q.correctAnswer
+            }))
+          );
+        }
 
-  const moduleOptions = useMemo(() => {
-    const opts = trainingModules.map(t => ({ value: t.id, label: t.title }));
-    return [{ value: '', label: 'Unlinked / General Security' }, ...opts];
-  }, [trainingModules]);
+        if (trainingRes.ok) {
+          const tData = await trainingRes.json();
+          const opts = tData.map((t: any) => ({ value: t.id, label: t.title }));
+          setTrainingModules([{ value: '', label: 'Unlinked / General Security' }, ...opts]);
+        }
+      } catch (err) {
+        console.error('Failed to load data', err);
+      } finally {
+        setLoadingData(false);
+      }
+    }
+    loadData();
+  }, [id]);
+
+  if (loadingData) {
+    return <div className="p-8 text-center text-slate-500">Loading quiz details...</div>;
+  }
 
   if (!quiz) {
     return (
@@ -127,14 +145,14 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
     if (!validate()) return;
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
 
     const quizPayload = {
       title,
       description,
-      trainingModuleId: trainingModuleId || undefined,
-      questions: questions.map((q, idx) => ({
-        id: q.id || `Q_NEW_${idx + 1}`,
+      trainingId: trainingModuleId || undefined,
+      passMark: quiz.passMark || 70, // Preserve original
+      status: quiz.status,
+      questions: questions.map((q) => ({
         question: q.question,
         options: q.options,
         correctAnswer: q.correctAnswer
@@ -142,11 +160,20 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
     };
 
     try {
-      updateQuiz(id, quizPayload);
-      setSuccess(true);
-      setTimeout(() => {
-        router.push('/admin/quizzes');
-      }, 1000);
+      const res = await fetch(`/api/admin/quizzes/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(quizPayload)
+      });
+      if (res.ok) {
+        setSuccess(true);
+        setTimeout(() => {
+          setSuccess(false);
+        }, 3000);
+      } else {
+        const errData = await res.json();
+        setErrors({ global: errData.error || 'Failed to update quiz.' });
+      }
     } catch (e) {
       setErrors({ global: 'Failed to update quiz record.' });
     } finally {
@@ -154,8 +181,29 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
     }
   };
 
+  // Process attempt history
+  // Group by user to show the latest result
+  const attemptMap = new Map<string, any>();
+  if (quiz.attempts) {
+    quiz.attempts.forEach((a: any) => {
+      if (!attemptMap.has(a.userId)) {
+        attemptMap.set(a.userId, {
+          user: a.user,
+          latestAttempt: a,
+          attemptsCount: 1,
+          passedAny: a.passed
+        });
+      } else {
+        const existing = attemptMap.get(a.userId);
+        existing.attemptsCount++;
+        if (a.passed) existing.passedAny = true;
+      }
+    });
+  }
+  const employeeResults = Array.from(attemptMap.values());
+
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto pb-12">
       {/* Breadcrumb */}
       <Breadcrumb
         items={[
@@ -181,7 +229,6 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
         <Card className="p-6 text-center py-12">
           <HelpCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
           <h3 className="text-base font-bold text-slate-800 mb-1">Quiz Updated Successfully!</h3>
-          <p className="text-xs text-slate-400">Success. Redirecting you back to quiz catalog...</p>
         </Card>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -212,7 +259,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
               <div>
                 <Select
                   label="Link Training Module"
-                  options={moduleOptions}
+                  options={trainingModules}
                   value={trainingModuleId}
                   onChange={(e) => setTrainingModuleId(e.target.value)}
                 />
@@ -234,7 +281,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
           {/* Interactive Questions Builder */}
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-xs font-bold text-slate-550 uppercase tracking-widest">
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">
                 Quiz Questions ({questions.length})
               </h3>
               <Button
@@ -309,15 +356,6 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
           {/* Form Actions */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
             <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => router.push('/admin/quizzes')}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button
               type="submit"
               variant="primary"
               size="sm"
@@ -329,6 +367,68 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
           </div>
         </form>
       )}
+
+      {/* Employee Results Table */}
+      <Card className="p-0 overflow-hidden mt-8">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2">
+              <FileSpreadsheet className="w-4 h-4 text-blue-500" />
+              Employee Results & Attempts
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">Review the latest attempt and overall requirement status.</p>
+          </div>
+        </div>
+        
+        {employeeResults.length === 0 ? (
+          <div className="p-8 text-center text-xs font-semibold text-slate-400">
+            No employees have attempted this quiz yet.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50/50 text-xxs font-bold text-slate-400 uppercase tracking-wider">
+                  <th className="px-5 py-3.5 font-semibold">Employee</th>
+                  <th className="px-5 py-3.5 font-semibold">Latest Result</th>
+                  <th className="px-5 py-3.5 font-semibold">Attempts</th>
+                  <th className="px-5 py-3.5 font-semibold">Latest Date</th>
+                  <th className="px-5 py-3.5 font-semibold">Requirement Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                {employeeResults.map((r, i) => (
+                  <tr key={i} className="hover:bg-slate-50/30">
+                    <td className="px-5 py-3">
+                      <p className="font-bold text-slate-800">{r.user?.name}</p>
+                      <p className="text-xxs text-slate-400 font-medium">{r.user?.employeeId} • {r.user?.department}</p>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${r.latestAttempt.passed ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+                        {r.latestAttempt.percentage}% {r.latestAttempt.passed ? 'PASS' : 'FAIL'}
+                      </span>
+                      <p className="text-[10px] text-slate-400 mt-1">{r.latestAttempt.score} / {r.latestAttempt.totalQuestions}</p>
+                    </td>
+                    <td className="px-5 py-3 text-xs font-bold text-slate-600">
+                      {r.attemptsCount}
+                    </td>
+                    <td className="px-5 py-3 text-xs text-slate-500">
+                      {new Date(r.latestAttempt.submittedAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-5 py-3 text-xs font-bold">
+                      {r.passedAny ? (
+                        <span className="text-emerald-600">PASSED</span>
+                      ) : (
+                        <span className="text-amber-500">FAILED</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

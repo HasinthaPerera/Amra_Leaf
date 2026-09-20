@@ -4,7 +4,6 @@ import React, { useMemo, useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, BookOpen, Clock, ShieldCheck, AlertCircle, PlayCircle, Award, ArrowRight } from 'lucide-react';
-import { useSimulation } from '@/context/SimulationContext';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/Feedback';
@@ -16,55 +15,91 @@ interface EmployeeTrainingDetailPageProps {
 
 export default function EmployeeTrainingDetailPage({ params }: EmployeeTrainingDetailPageProps) {
   const { id } = use(params);
-  const { currentUser, trainingModules, progressList, quizzes, updateTrainingProgress } = useSimulation();
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
+  const [module, setModule] = useState<any>(null);
   const router = useRouter();
 
-  // Find target training module
-  const module = useMemo(() => {
-    return trainingModules.find((t) => t.id === id && t.status === 'PUBLISHED') || null;
-  }, [trainingModules, id]);
+  useEffect(() => {
+    async function fetchModule() {
+      setLoadingData(true);
+      try {
+        const res = await fetch(`/api/employee/training/${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setModule(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch module', err);
+      } finally {
+        setLoadingData(false);
+      }
+    }
+    fetchModule();
+  }, [id]);
 
-  // Find user progress record
-  const progress = useMemo(() => {
-    if (!currentUser) return null;
-    return progressList.find((p) => p.userId === currentUser.id) || null;
-  }, [progressList, currentUser]);
-
-  const trainingState = useMemo(() => {
-    if (!progress) return null;
-    return progress.trainingProgress.find((tp) => tp.moduleId === id) || null;
-  }, [progress, id]);
-
-  const progressPercent = trainingState?.progressPercent || 0;
-  const isCompleted = trainingState?.status === 'COMPLETED';
+  const userProgress = module?.progress && module.progress.length > 0 ? module.progress[0] : null;
+  const progressPercent = userProgress?.progressPercentage || 0;
+  const status = userProgress?.status || 'NOT_STARTED';
+  const isCompleted = status === 'COMPLETED';
+  const isInProgress = status === 'IN_PROGRESS';
 
   // Find linked quiz
-  const linkedQuiz = useMemo(() => {
-    return quizzes.find((q) => q.trainingModuleId === id) || null;
-  }, [quizzes, id]);
+  const linkedQuiz = module?.quizzes && module.quizzes.length > 0 ? module.quizzes[0] : null;
 
-  // Set initial status to IN_PROGRESS (e.g. 20% complete) if not started yet
-  useEffect(() => {
-    if (module && currentUser && progress && !trainingState) {
-      updateTrainingProgress(id, 20); // Mark as in progress when opened
+  const handleStartModule = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/employee/training/${id}/progress`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'START' })
+      });
+      if (res.ok) {
+        const newProgress = await res.json();
+        setModule((prev: any) => ({
+          ...prev,
+          progress: [newProgress]
+        }));
+      }
+    } catch (e) {
+      console.error('Failed to start module', e);
+    } finally {
+      setLoading(false);
     }
-  }, [module, currentUser, progress, trainingState, id, updateTrainingProgress]);
+  };
 
   const handleCompleteModule = async () => {
     if (isCompleted) return;
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600)); // Simulate progress calculation
-
     try {
-      updateTrainingProgress(id, 100);
+      const res = await fetch(`/api/employee/training/${id}/progress`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'COMPLETE' })
+      });
+      if (res.ok) {
+        const newProgress = await res.json();
+        setModule((prev: any) => ({
+          ...prev,
+          progress: [newProgress]
+        }));
+      }
     } catch (e) {
-      console.error(e);
+      console.error('Failed to complete module', e);
     } finally {
       setLoading(false);
     }
   };
+
+  if (loadingData) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+        <p className="font-bold text-sm text-slate-700">Loading module details...</p>
+      </div>
+    );
+  }
 
   if (!module) {
     return (
@@ -80,7 +115,7 @@ export default function EmployeeTrainingDetailPage({ params }: EmployeeTrainingD
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto pb-12">
       {/* Breadcrumb */}
       <Breadcrumb
         items={[
@@ -107,9 +142,11 @@ export default function EmployeeTrainingDetailPage({ params }: EmployeeTrainingD
         <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold border ${
           isCompleted 
             ? 'bg-emerald-50 text-emerald-800 border-emerald-100' 
-            : 'bg-amber-50 text-amber-850 border-amber-100'
+            : isInProgress
+            ? 'bg-amber-50 text-amber-850 border-amber-100'
+            : 'bg-slate-50 text-slate-600 border-slate-200'
         }`}>
-          {isCompleted ? 'Module Finished' : 'Module In Progress'}
+          {isCompleted ? 'Module Finished' : isInProgress ? 'Module In Progress' : 'Not Started'}
         </span>
       </div>
 
@@ -121,10 +158,10 @@ export default function EmployeeTrainingDetailPage({ params }: EmployeeTrainingD
             <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 pb-3 mb-6">
               <span className="flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5" />
-                Duration: {module.estimatedDuration}
+                Duration: {module.estimatedMinutes} mins
               </span>
               <span className="h-4 w-px bg-slate-200" />
-              <span>Created: {module.createdDate}</span>
+              <span>Created: {new Date(module.createdAt).toISOString().split('T')[0]}</span>
             </div>
 
             <p className="text-xs text-slate-500 font-bold border-l-2 border-slate-300 pl-3 italic mb-6">
@@ -132,7 +169,7 @@ export default function EmployeeTrainingDetailPage({ params }: EmployeeTrainingD
             </p>
 
             {/* Markdown body render */}
-            <div className="prose prose-slate max-w-none text-slate-600 text-xs leading-relaxed whitespace-pre-wrap font-sans">
+            <div className={`prose prose-slate max-w-none text-slate-600 text-xs leading-relaxed whitespace-pre-wrap font-sans transition-opacity duration-300 ${status === 'NOT_STARTED' ? 'opacity-50 select-none blur-[1px]' : ''}`}>
               {module.content}
             </div>
           </Card>
@@ -162,7 +199,7 @@ export default function EmployeeTrainingDetailPage({ params }: EmployeeTrainingD
                 <p className="text-xs font-bold text-slate-800">Module Completed ✓</p>
                 <p className="text-[10px] text-slate-400 leading-normal">You have completed reading the core materials of this module.</p>
               </div>
-            ) : (
+            ) : isInProgress ? (
               <Button
                 variant="primary"
                 className="w-full justify-center text-xs font-bold py-2.5 bg-emerald-600 hover:bg-emerald-500"
@@ -170,6 +207,16 @@ export default function EmployeeTrainingDetailPage({ params }: EmployeeTrainingD
                 isLoading={loading}
               >
                 COMPLETE TRAINING MODULE
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                className="w-full justify-center text-xs font-bold py-2.5"
+                onClick={handleStartModule}
+                isLoading={loading}
+                leftIcon={<PlayCircle className="w-4 h-4" />}
+              >
+                START COURSE
               </Button>
             )}
           </Card>

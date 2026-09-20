@@ -29,7 +29,7 @@ export default function NotFoundPage() {
         </h1>
         
         <p className="text-slate-400 font-medium text-sm leading-relaxed mb-8">
-          The requested system node could not be located in the corporate catalog. It may have been relocated, archived, or deleted.
+          The requested system node could not be located in the catalog. It may have been relocated, archived, or deleted.
         </p>
 
         <Button

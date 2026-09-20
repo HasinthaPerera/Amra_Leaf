@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useMemo, use } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, CheckCircle, XCircle, AlertCircle, 
   ChevronRight, ChevronLeft, Send, RefreshCw, Trophy, Award 
 } from 'lucide-react';
-import { useSimulation } from '@/context/SimulationContext';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Radio } from '@/components/ui/Input';
@@ -19,18 +18,36 @@ interface EmployeeQuizPageProps {
 
 export default function EmployeeQuizPage({ params }: EmployeeQuizPageProps) {
   const { id } = use(params);
-  const { quizzes, submitQuizResult } = useSimulation();
   const router = useRouter();
 
-  // Find target quiz
-  const quiz = useMemo(() => {
-    return quizzes.find((q) => q.id === id) || null;
-  }, [quizzes, id]);
+  const [quiz, setQuiz] = useState<any>(null);
+  const [loadingData, setLoadingData] = useState(true);
 
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
   const [quizResult, setQuizResult] = useState<any | null>(null);
+
+  useEffect(() => {
+    async function fetchQuiz() {
+      try {
+        const res = await fetch(`/api/employee/quizzes/${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setQuiz(data);
+        }
+      } catch (err) {
+        console.error('Failed to load quiz', err);
+      } finally {
+        setLoadingData(false);
+      }
+    }
+    fetchQuiz();
+  }, [id]);
+
+  if (loadingData) {
+    return <div className="p-8 text-center text-slate-500">Loading quiz...</div>;
+  }
 
   if (!quiz) {
     return (
@@ -74,13 +91,22 @@ export default function EmployeeQuizPage({ params }: EmployeeQuizPageProps) {
     }
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800)); // Simulate grading
 
     try {
-      const res = submitQuizResult(quiz.id, selectedAnswers);
-      setQuizResult(res);
+      const res = await fetch(`/api/employee/quizzes/${id}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers: selectedAnswers })
+      });
+      if (res.ok) {
+        const result = await res.json();
+        setQuizResult(result);
+      } else {
+        alert('Failed to submit quiz.');
+      }
     } catch (e) {
       console.error(e);
+      alert('Failed to submit quiz.');
     } finally {
       setLoading(false);
     }
@@ -194,7 +220,7 @@ export default function EmployeeQuizPage({ params }: EmployeeQuizPageProps) {
 
             {/* Answer Options Radio Stack */}
             <div className="space-y-3 pt-2">
-              {currentQuestion.options.map((opt, oIdx) => {
+              {currentQuestion.options.map((opt: string, oIdx: number) => {
                 const isSelected = selectedAnswers[currentQuestion.id] === oIdx;
                 
                 return (

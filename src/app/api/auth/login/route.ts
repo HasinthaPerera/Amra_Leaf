@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { createSession } from '@/lib/auth';
+import { logAuditActivity } from '@/lib/audit';
 
 export async function POST(request: Request) {
   try {
@@ -54,6 +55,9 @@ export async function POST(request: Request) {
 
     // Create secure server-managed session
     await createSession(user.id);
+    
+    // Log successful login
+    await logAuditActivity(user.id, 'AUTH_LOGIN_SUCCESS');
 
     // Return sanitized user payload (strictly excluding passwordHash & raw session token)
     return NextResponse.json({

@@ -27,6 +27,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
     { label: 'Training Modules', href: '/admin/training', icon: GraduationCap },
     { label: 'Quizzes', href: '/admin/quizzes', icon: HelpCircle },
     { label: 'Compliance Tracking', href: '/admin/compliance', icon: ShieldCheck },
+    { label: 'Activity Log', href: '/admin/activity', icon: BarChart2 },
   ];
 
   const employeeLinks = [

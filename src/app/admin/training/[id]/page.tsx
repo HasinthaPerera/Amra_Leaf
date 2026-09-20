@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, use } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, GraduationCap, AlertCircle } from 'lucide-react';
-import { useSimulation } from '@/context/SimulationContext';
 import { Button } from '@/components/ui/Button';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Breadcrumb } from '@/components/ui/Navigation';
+import { StatusBadge } from '@/components/ui/Feedback';
 
 interface EditTrainingPageProps {
   params: Promise<{ id: string }>;
@@ -15,13 +15,11 @@ interface EditTrainingPageProps {
 
 export default function EditTrainingPage({ params }: EditTrainingPageProps) {
   const { id } = use(params);
-  const { trainingModules, updateTraining } = useSimulation();
   const router = useRouter();
 
-  // Find target training module
-  const training = useMemo(() => {
-    return trainingModules.find((t) => t.id === id) || null;
-  }, [trainingModules, id]);
+  const [training, setTraining] = useState<any>(null);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -33,16 +31,43 @@ export default function EditTrainingPage({ params }: EditTrainingPageProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
 
-  // Pre-fill form values
   useEffect(() => {
-    if (training) {
-      setTitle(training.title);
-      setDescription(training.description);
-      setEstimatedDuration(training.estimatedDuration);
-      setStatus(training.status);
-      setContent(training.content);
+    async function fetchData() {
+      setLoadingData(true);
+      try {
+        const [trainingRes, employeesRes] = await Promise.all([
+          fetch(`/api/admin/training/${id}`),
+          fetch('/api/admin/employees')
+        ]);
+        if (trainingRes.ok) {
+          const t = await trainingRes.json();
+          setTraining(t);
+          setTitle(t.title);
+          setDescription(t.description);
+          setEstimatedDuration(t.estimatedMinutes.toString());
+          setStatus(t.status);
+          setContent(t.content);
+        }
+        if (employeesRes.ok) {
+          const e = await employeesRes.json();
+          setEmployees(e);
+        }
+      } catch (err) {
+        console.error('Failed to load training details', err);
+      } finally {
+        setLoadingData(false);
+      }
     }
-  }, [training]);
+    fetchData();
+  }, [id]);
+
+  if (loadingData) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+        <p className="font-bold text-sm text-slate-700">Loading module details...</p>
+      </div>
+    );
+  }
 
   if (!training) {
     return (
@@ -61,7 +86,7 @@ export default function EditTrainingPage({ params }: EditTrainingPageProps) {
     const errs: Record<string, string> = {};
     if (!title.trim()) errs.title = 'Module title is required';
     if (!description.trim()) errs.description = 'Brief description is required';
-    if (!estimatedDuration.trim()) errs.estimatedDuration = 'Duration is required (e.g. 10 mins)';
+    if (!estimatedDuration.trim()) errs.estimatedDuration = 'Duration is required (e.g. 10)';
     if (!content.trim()) errs.content = 'Module learning text content is required';
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -72,29 +97,46 @@ export default function EditTrainingPage({ params }: EditTrainingPageProps) {
     if (!validate()) return;
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
 
     try {
-      updateTraining(id, {
-        title,
-        description,
-        estimatedDuration,
-        status,
-        content
+      const res = await fetch(`/api/admin/training/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          description,
+          estimatedMinutes: estimatedDuration,
+          status,
+          content
+        }),
       });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to update training module');
+      }
+
       setSuccess(true);
       setTimeout(() => {
         router.push('/admin/training');
       }, 1000);
-    } catch (e) {
-      setErrors({ global: 'Failed to update training module record.' });
+    } catch (e: any) {
+      setErrors({ global: e.message || 'Failed to update training module record.' });
     } finally {
       setLoading(false);
     }
   };
 
+  // Build employee progress table data
+  const progressMap = new Map();
+  if (training.progress) {
+    training.progress.forEach((p: any) => {
+      progressMap.set(p.userId, p);
+    });
+  }
+
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto pb-12">
       {/* Breadcrumb */}
       <Breadcrumb
         items={[
@@ -145,8 +187,9 @@ export default function EditTrainingPage({ params }: EditTrainingPageProps) {
 
               <div>
                 <Input
-                  label="Estimated Duration"
-                  placeholder="e.g. 10 mins"
+                  label="Estimated Duration (minutes)"
+                  placeholder="e.g. 10"
+                  type="number"
                   required
                   value={estimatedDuration}
                   onChange={(e) => setEstimatedDuration(e.target.value)}
@@ -215,6 +258,65 @@ export default function EditTrainingPage({ params }: EditTrainingPageProps) {
             </div>
           </form>
         )}
+      </Card>
+
+      {/* Admin Training Status Section */}
+      <Card className="p-0 overflow-hidden">
+        <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Employee Training Status</h3>
+          <p className="text-xs text-slate-500 mt-1">Track which employees have started or completed this module.</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50/50 text-xxs font-bold text-slate-400 uppercase tracking-wider">
+                <th className="px-5 py-3.5 font-semibold">Employee</th>
+                <th className="px-5 py-3.5 font-semibold">Status</th>
+                <th className="px-5 py-3.5 font-semibold">Completion Date</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-slate-700">
+              {employees.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-5 py-8 text-center text-xs text-slate-400">
+                    No active employees found.
+                  </td>
+                </tr>
+              ) : (
+                employees.map(emp => {
+                  const empProgress = progressMap.get(emp.id);
+                  const pStatus = empProgress?.status || 'NOT_STARTED';
+                  const completedDate = empProgress?.completedAt 
+                    ? new Date(empProgress.completedAt).toLocaleDateString() 
+                    : '-';
+                  
+                  return (
+                    <tr key={emp.id} className="hover:bg-slate-50/30">
+                      <td className="px-5 py-4">
+                        <p className="font-bold text-slate-800">{emp.name}</p>
+                        <p className="text-xxs text-slate-400">{emp.department}</p>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xxs font-bold uppercase tracking-wider border ${
+                          pStatus === 'COMPLETED' 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                            : pStatus === 'IN_PROGRESS'
+                            ? 'bg-amber-50 text-amber-700 border-amber-100'
+                            : 'bg-slate-50 text-slate-500 border-slate-100'
+                        }`}>
+                          {pStatus.replace('_', ' ')}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-xs font-semibold text-slate-500">
+                        {completedDate}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </Card>
     </div>
   );
