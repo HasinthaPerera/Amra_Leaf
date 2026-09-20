@@ -217,7 +217,7 @@ export default function EmployeeDashboardPage() {
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2.5">Security Tips</h3>
             <div className="bg-slate-50 border border-slate-100 rounded-lg p-3.5 text-slate-600 text-xxs leading-relaxed font-semibold">
               <span className="text-blue-600 block text-xs font-extrabold uppercase mb-1">MFA Alert</span>
-              Verify that Multi-Factor Authentication is active on your company email client. Avoid verifying login approvals via SMS. Use time-based authenticator apps instead.
+              Verify that Multi-Factor Authentication is active on your work email or authorized Amra Leaf account. Avoid verifying login approvals via SMS. Use time-based authenticator apps instead.
             </div>
           </div>
           

@@ -137,8 +137,8 @@ export default function LoginPage() {
         </div>
       </div>
       <div className="sm:mx-auto sm:w-full sm:max-w-md z-10 px-4 mt-8 text-center">
-        <p className="text-[10px] text-slate-500 font-medium">
-          <strong>Privacy & Data Use Notice:</strong> Your account details, policy signatures, training progress, and quiz results are securely recorded for internal security awareness and compliance monitoring. Access is restricted to authorized administrators.
+        <p className="text-xs text-slate-400 font-medium leading-relaxed">
+          <strong className="text-slate-300">Privacy & Data Use Notice:</strong> Your account details, policy signatures, training progress, and quiz results are securely recorded for internal security awareness and compliance monitoring. Access is restricted to authorized administrators.
         </p>
       </div>
     </div>

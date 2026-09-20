@@ -123,7 +123,7 @@ export default function EmployeeProgressPage() {
         <Card className="lg:col-span-1 p-5 flex flex-col justify-between border-l-4 border-l-blue-600 min-h-64">
           <div className="space-y-4">
             <h3 className="text-xs font-bold text-slate-450 uppercase tracking-wider border-b border-slate-100 pb-2">
-              Security Rank
+              Overall Compliance
             </h3>
             
             <div className="text-center py-4">
