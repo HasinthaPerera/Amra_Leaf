@@ -1,19 +1,42 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { HelpCircle, Search, PlusCircle, Edit2, Trash2, AlertCircle, FileSpreadsheet } from 'lucide-react';
-import { useSimulation } from '@/context/SimulationContext';
 import { SearchBar } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { ConfirmDialog } from '@/components/ui/Modal';
+
+interface Quiz {
+  id: string;
+  title: string;
+  description: string;
+  trainingId: string;
+  trainingModule?: { title: string };
+  _count: { questions: number };
+}
 
 export default function QuizzesListPage() {
-  const { quizzes, trainingModules, deleteQuiz } = useSimulation();
   const [search, setSearch] = useState('');
-  const [selectedDelete, setSelectedDelete] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadQuizzes() {
+      try {
+        const res = await fetch('/api/admin/quizzes');
+        if (res.ok) {
+          const data = await res.json();
+          setQuizzes(data);
+        }
+      } catch (err) {
+        console.error('Failed to load quizzes', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadQuizzes();
+  }, []);
 
   // Filtered quizzes list
   const filteredQuizzes = useMemo(() => {
@@ -25,21 +48,9 @@ export default function QuizzesListPage() {
     });
   }, [quizzes, search]);
 
-  const handleDeleteConfirm = async () => {
-    if (!selectedDelete) return;
-    setLoading(true);
-    await new Promise(r => setTimeout(r, 450));
-    deleteQuiz(selectedDelete);
-    setSelectedDelete(null);
-    setLoading(false);
-  };
-
-  // Helper looking up course titles
-  const getLinkedTrainingTitle = (moduleId?: string) => {
-    if (!moduleId) return 'None';
-    const found = trainingModules.find(t => t.id === moduleId);
-    return found ? found.title : `Module: ${moduleId}`;
-  };
+  if (loading) {
+    return <div className="p-8 text-center text-slate-500">Loading quizzes...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -93,10 +104,10 @@ export default function QuizzesListPage() {
                       <p className="text-xxs text-slate-400 line-clamp-1 font-medium leading-relaxed">{q.description}</p>
                     </td>
                     <td className="px-5 py-4 text-xs font-semibold text-slate-600">
-                      {getLinkedTrainingTitle(q.trainingModuleId)}
+                      {q.trainingModule?.title || 'None'}
                     </td>
                     <td className="px-5 py-4 text-center text-xs font-extrabold text-slate-700">
-                      {q.questions.length}
+                      {q._count?.questions || 0}
                     </td>
                     <td className="px-5 py-4 text-right flex items-center justify-end gap-2">
                       <Link href={`/admin/quizzes/${q.id}`}>
@@ -106,19 +117,9 @@ export default function QuizzesListPage() {
                           className="py-1 text-slate-600 border border-slate-200 hover:text-blue-600 hover:border-blue-200"
                           leftIcon={<Edit2 className="w-3.5 h-3.5" />}
                         >
-                          Edit Questions
+                          Manage Quiz
                         </Button>
                       </Link>
-
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedDelete(q.id)}
-                        className="py-1 text-xs font-bold text-red-500 hover:bg-red-50 hover:text-red-600"
-                        leftIcon={<Trash2 className="w-3.5 h-3.5" />}
-                      >
-                        Delete
-                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -127,18 +128,6 @@ export default function QuizzesListPage() {
           </div>
         )}
       </Card>
-
-      {/* Delete Confirmation */}
-      <ConfirmDialog
-        isOpen={selectedDelete !== null}
-        onClose={() => setSelectedDelete(null)}
-        onConfirm={handleDeleteConfirm}
-        title="Delete Security Quiz"
-        message="Are you sure you want to permanently delete this quiz? Active employee attempts logs for this test will remain, but the quiz itself will be deleted."
-        confirmLabel="DELETE QUIZ"
-        variant="danger"
-        isLoading={loading}
-      />
     </div>
   );
 }
