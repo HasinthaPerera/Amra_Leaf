@@ -39,7 +39,7 @@ export default function EmployeesListPage() {
       const matchSearch = 
         emp.name.toLowerCase().includes(search.toLowerCase()) ||
         emp.email.toLowerCase().includes(search.toLowerCase()) ||
-        emp.id.toLowerCase().includes(search.toLowerCase());
+        emp.employeeId.toLowerCase().includes(search.toLowerCase());
       
       const matchDept = deptFilter === 'ALL' || emp.department === deptFilter;
       
@@ -138,7 +138,7 @@ export default function EmployeesListPage() {
                 {filteredEmployees.map((emp) => (
                   <tr key={emp.id} className="hover:bg-slate-50/30">
                     <td className="px-5 py-4 font-extrabold text-slate-800 text-xs tracking-wider">
-                      {emp.id}
+                      {emp.employeeId}
                     </td>
                     <td className="px-5 py-4">
                       <p className="font-bold text-slate-800 leading-snug">{emp.name}</p>
