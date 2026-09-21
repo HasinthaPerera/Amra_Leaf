@@ -138,7 +138,7 @@ export default function NewEmployeePage() {
 
               <Input
                 label="Full Name"
-                placeholder="e.g. Liam Vance"
+                placeholder="e.g. Pathum Fernando"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}

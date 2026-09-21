@@ -95,31 +95,41 @@ export default function LoginPage() {
             />
           )}
 
-          <form className="space-y-5" onSubmit={handleSubmit}>
+          <form className="space-y-5" onSubmit={handleSubmit} autoComplete="off">
+            {/* Hidden dummy fields to capture browser autofill heuristics */}
+            <input type="text" name="email" id="fake_email_trap" style={{ display: 'none' }} tabIndex={-1} readOnly />
+            <input type="password" name="password" id="fake_password_trap" style={{ display: 'none' }} tabIndex={-1} readOnly />
+
             <div>
               <Input
-                label="Email Address"
-                id="email"
+                label="Corporate Email Address"
+                labelClassName="text-slate-300"
+                id="amra_login_email"
+                name="amra_login_email"
                 type="email"
                 required
-                placeholder="you@amraleaf.com"
+                autoComplete="off"
+                placeholder="Enter email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
-                className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500 focus:border-blue-500 focus:ring-blue-500/20"
+                className="bg-slate-950/80 border-slate-700 text-white placeholder-slate-500 focus:border-blue-500 focus:ring-blue-500/30 font-medium"
               />
             </div>
 
             <div>
               <PasswordInput
                 label="Security Password"
-                id="password"
+                labelClassName="text-slate-300"
+                id="amra_login_password"
+                name="amra_login_password"
                 required
-                placeholder="Enter account password"
+                autoComplete="new-password"
+                placeholder="Enter password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
-                className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500 focus:border-blue-500 focus:ring-blue-500/20"
+                className="bg-slate-950/80 border-slate-700 text-white placeholder-slate-500 focus:border-blue-500 focus:ring-blue-500/30 font-medium"
               />
             </div>
 

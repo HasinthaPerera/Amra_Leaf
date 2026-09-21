@@ -6,14 +6,19 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   helperText?: string;
+  labelClassName?: string;
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, helperText, className = '', id, ...props }, ref) => {
+  ({ label, error, helperText, labelClassName = '', className = '', id, ...props }, ref) => {
+    const hasTextColor = /\btext-/.test(className);
+    const hasBgColor = /\bbg-/.test(className);
+    const hasBorderColor = /\bborder-/.test(className);
+
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={id} className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+          <label htmlFor={id} className={`block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5 ${labelClassName}`}>
             {label} {props.required && <span className="text-red-500">*</span>}
           </label>
         )}
@@ -21,9 +26,11 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           id={id}
           ref={ref}
           className={`
-            w-full px-3 py-2 text-sm text-slate-800 bg-white border rounded-lg transition-colors duration-200 outline-none
+            w-full px-3 py-2 text-sm border rounded-lg transition-colors duration-200 outline-none
             focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500
-            ${error ? 'border-red-400 focus:ring-red-500/20 focus:border-red-500' : 'border-slate-200 hover:border-slate-300'}
+            ${!hasTextColor ? 'text-slate-800' : ''}
+            ${!hasBgColor ? 'bg-white' : ''}
+            ${error ? 'border-red-400 focus:ring-red-500/20 focus:border-red-500' : (!hasBorderColor ? 'border-slate-200 hover:border-slate-300' : '')}
             ${className}
           `}
           {...props}
@@ -38,12 +45,16 @@ Input.displayName = 'Input';
 
 // Password Input
 export const PasswordInput = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, helperText, className = '', id, ...props }, ref) => {
+  ({ label, error, helperText, labelClassName = '', className = '', id, ...props }, ref) => {
     const [show, setShow] = useState(false);
+    const hasTextColor = /\btext-/.test(className);
+    const hasBgColor = /\bbg-/.test(className);
+    const hasBorderColor = /\bborder-/.test(className);
+
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={id} className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+          <label htmlFor={id} className={`block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5 ${labelClassName}`}>
             {label} {props.required && <span className="text-red-500">*</span>}
           </label>
         )}
@@ -53,9 +64,11 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             type={show ? 'text' : 'password'}
             className={`
-              w-full pl-3 pr-10 py-2 text-sm text-slate-800 bg-white border rounded-lg transition-colors duration-200 outline-none
+              w-full pl-3 pr-10 py-2 text-sm border rounded-lg transition-colors duration-200 outline-none
               focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500
-              ${error ? 'border-red-400 focus:ring-red-500/20 focus:border-red-500' : 'border-slate-200 hover:border-slate-300'}
+              ${!hasTextColor ? 'text-slate-800' : ''}
+              ${!hasBgColor ? 'bg-white' : ''}
+              ${error ? 'border-red-400 focus:ring-red-500/20 focus:border-red-500' : (!hasBorderColor ? 'border-slate-200 hover:border-slate-300' : '')}
               ${className}
             `}
             {...props}
@@ -63,7 +76,7 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, InputProps>(
           <button
             type="button"
             onClick={() => setShow(!show)}
-            className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 focus:outline-none"
+            className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-200 focus:outline-none"
           >
             {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
@@ -81,14 +94,19 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
   label?: string;
   error?: string;
   helperText?: string;
+  labelClassName?: string;
 }
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ label, error, helperText, className = '', id, ...props }, ref) => {
+  ({ label, error, helperText, labelClassName = '', className = '', id, ...props }, ref) => {
+    const hasTextColor = /\btext-/.test(className);
+    const hasBgColor = /\bbg-/.test(className);
+    const hasBorderColor = /\bborder-/.test(className);
+
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={id} className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+          <label htmlFor={id} className={`block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5 ${labelClassName}`}>
             {label} {props.required && <span className="text-red-500">*</span>}
           </label>
         )}
@@ -96,9 +114,11 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           id={id}
           ref={ref}
           className={`
-            w-full px-3 py-2 text-sm text-slate-800 bg-white border rounded-lg transition-colors duration-200 outline-none resize-none
+            w-full px-3 py-2 text-sm border rounded-lg transition-colors duration-200 outline-none resize-none
             focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500
-            ${error ? 'border-red-400 focus:ring-red-500/20 focus:border-red-500' : 'border-slate-200 hover:border-slate-300'}
+            ${!hasTextColor ? 'text-slate-800' : ''}
+            ${!hasBgColor ? 'bg-white' : ''}
+            ${error ? 'border-red-400 focus:ring-red-500/20 focus:border-red-500' : (!hasBorderColor ? 'border-slate-200 hover:border-slate-300' : '')}
             ${className}
           `}
           {...props}
@@ -116,15 +136,20 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
   helperText?: string;
+  labelClassName?: string;
   options: { value: string; label: string }[];
 }
 
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, helperText, options, className = '', id, ...props }, ref) => {
+  ({ label, error, helperText, labelClassName = '', options, className = '', id, ...props }, ref) => {
+    const hasTextColor = /\btext-/.test(className);
+    const hasBgColor = /\bbg-/.test(className);
+    const hasBorderColor = /\bborder-/.test(className);
+
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={id} className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+          <label htmlFor={id} className={`block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5 ${labelClassName}`}>
             {label} {props.required && <span className="text-red-500">*</span>}
           </label>
         )}
@@ -132,9 +157,11 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           id={id}
           ref={ref}
           className={`
-            w-full px-3 py-2 text-sm text-slate-800 bg-white border rounded-lg transition-colors duration-200 outline-none
+            w-full px-3 py-2 text-sm border rounded-lg transition-colors duration-200 outline-none
             focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500
-            ${error ? 'border-red-400 focus:ring-red-500/20 focus:border-red-500' : 'border-slate-200 hover:border-slate-300'}
+            ${!hasTextColor ? 'text-slate-800' : ''}
+            ${!hasBgColor ? 'bg-white' : ''}
+            ${error ? 'border-red-400 focus:ring-red-500/20 focus:border-red-500' : (!hasBorderColor ? 'border-slate-200 hover:border-slate-300' : '')}
             ${className}
           `}
           {...props}
@@ -225,6 +252,9 @@ export function SearchBar({ onSearch, className = '', placeholder = 'Search...',
     }
   };
 
+  const hasTextColor = /\btext-/.test(className);
+  const hasBgColor = /\bbg-/.test(className);
+
   return (
     <div className="relative w-full">
       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
@@ -235,8 +265,10 @@ export function SearchBar({ onSearch, className = '', placeholder = 'Search...',
         onChange={handleChange}
         placeholder={placeholder}
         className={`
-          w-full pl-9 pr-4 py-2 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg outline-none transition-colors duration-200
+          w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg outline-none transition-colors duration-200
           hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10
+          ${!hasTextColor ? 'text-slate-800' : ''}
+          ${!hasBgColor ? 'bg-white' : ''}
           ${className}
         `}
         {...props}
