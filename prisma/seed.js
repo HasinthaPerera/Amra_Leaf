@@ -5,16 +5,16 @@ const prisma = new PrismaClient();
 
 const usersToSeed = [
   {
-    employeeId: 'ADM001',
-    name: 'Dilani Perera',
-    email: 'dilani.perera@amraleaf.com',
-    passwordRaw: 'Dilani#Admin2026!',
+    employeeId: 'ADM-001',
+    name: 'Dilhara Perera',
+    email: 'dilhara.perera@amraleaf.com',
+    passwordRaw: 'Dilhara#Admin2026!',
     role: 'ADMIN',
     department: 'Cybersecurity Operations',
     status: 'ACTIVE',
   },
   {
-    employeeId: 'EMP001',
+    employeeId: 'EMP-001',
     name: 'Pathum Fernando',
     email: 'pathum.fernando@amraleaf.com',
     passwordRaw: 'Pathum#Fin2026!',
@@ -23,7 +23,7 @@ const usersToSeed = [
     status: 'ACTIVE',
   },
   {
-    employeeId: 'EMP002',
+    employeeId: 'EMP-002',
     name: 'Fathima Rishda',
     email: 'fathima.rishda@amraleaf.com',
     passwordRaw: 'Fathima#HR2026!',
@@ -32,7 +32,7 @@ const usersToSeed = [
     status: 'ACTIVE',
   },
   {
-    employeeId: 'EMP003',
+    employeeId: 'EMP-003',
     name: 'Tharshan Sivakumar',
     email: 'tharshan.sivakumar@amraleaf.com',
     passwordRaw: 'Tharshan#Dev2026!',
@@ -41,7 +41,7 @@ const usersToSeed = [
     status: 'ACTIVE',
   },
   {
-    employeeId: 'EMP004',
+    employeeId: 'EMP-004',
     name: 'Dinusha Wickramasinghe',
     email: 'dinusha.wickramasinghe@amraleaf.com',
     passwordRaw: 'Dinusha#Sales2026!',
@@ -50,7 +50,7 @@ const usersToSeed = [
     status: 'ACTIVE',
   },
   {
-    employeeId: 'EMP005',
+    employeeId: 'EMP-005',
     name: 'Nuwan Kulasekara',
     email: 'nuwan.kulasekara@amraleaf.com',
     passwordRaw: 'Nuwan#Ops2026!',
@@ -59,7 +59,7 @@ const usersToSeed = [
     status: 'ACTIVE',
   },
   {
-    employeeId: 'EMP006',
+    employeeId: 'EMP-006',
     name: 'Vithushana Selvarajah',
     email: 'vithushana.selvarajah@amraleaf.com',
     passwordRaw: 'Vithu#CS2026!',
@@ -68,7 +68,7 @@ const usersToSeed = [
     status: 'ACTIVE',
   },
   {
-    employeeId: 'EMP007',
+    employeeId: 'EMP-007',
     name: 'Mohomed Imran',
     email: 'mohomed.imran@amraleaf.com',
     passwordRaw: 'Mohomed#IT2026!',
@@ -77,7 +77,7 @@ const usersToSeed = [
     status: 'ACTIVE',
   },
   {
-    employeeId: 'EMP008',
+    employeeId: 'EMP-008',
     name: 'Chathurika De Silva',
     email: 'chathurika.desilva@amraleaf.com',
     passwordRaw: 'Chathurika#Legal2026!',
@@ -92,7 +92,7 @@ async function main() {
   await prisma.session.deleteMany({});
   await prisma.user.deleteMany({});
 
-  console.log('Seeding initial Sri Lankan users...');
+  console.log('Seeding Sri Lankan users with updated IDs...');
 
   for (const user of usersToSeed) {
     const passwordHash = await bcrypt.hash(user.passwordRaw, 10);
@@ -108,10 +108,10 @@ async function main() {
         status: user.status,
       },
     });
-    console.log(`Seeded user: ${user.name} <${user.email}> (${user.role})`);
+    console.log(`  ✓ ${user.employeeId}  ${user.name} <${user.email}> (${user.role})`);
   }
 
-  console.log('Seeding completed successfully!');
+  console.log('\nSeeding completed successfully!');
 }
 
 main()

@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# Local-only sensitive files (never commit)
+USER_CREDENTIALS.md
+
 # vercel
 .vercel
 
