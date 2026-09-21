@@ -2,24 +2,23 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, UserPlus, CheckCircle } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { ArrowLeft, UserPlus, CheckCircle, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Breadcrumb } from '@/components/ui/Navigation';
 
 export default function NewEmployeePage() {
-  const [employeeId, setEmployeeId] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [department, setDepartment] = useState('Operations');
+  const [department, setDepartment] = useState('Management');
   const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE');
-  
+
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
+  const [createdEmployee, setCreatedEmployee] = useState<{ name: string; email: string; employeeId: string } | null>(null);
   const router = useRouter();
 
   const deptOptions = [
@@ -30,12 +29,12 @@ export default function NewEmployeePage() {
     { value: 'Kitchen', label: 'Kitchen' },
     { value: 'Delivery', label: 'Delivery' },
     { value: 'Accounts', label: 'Accounts' },
-    { value: 'Marketing / Social Media', label: 'Marketing / Social Media' }
+    { value: 'Marketing / Social Media', label: 'Marketing / Social Media' },
+    { value: 'Cybersecurity Operations', label: 'Cybersecurity Operations' },
   ];
 
   const validate = () => {
     const errs: Record<string, string> = {};
-    if (!employeeId.trim()) errs.employeeId = 'Employee ID is required';
     if (!name.trim()) errs.name = 'Full name is required';
     if (!email.trim()) {
       errs.email = 'Email address is required';
@@ -61,13 +60,12 @@ export default function NewEmployeePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          employeeId,
           name,
           email,
           password,
           department,
           status,
-        })
+        }),
       });
 
       const data = await res.json();
@@ -77,11 +75,12 @@ export default function NewEmployeePage() {
         return;
       }
 
+      setCreatedEmployee({ name: data.name, email: data.email, employeeId: data.employeeId });
       setSuccess(true);
       setTimeout(() => {
         router.push('/admin/employees');
-      }, 1000);
-    } catch (e) {
+      }, 4000);
+    } catch {
       setErrors({ global: 'Failed to create employee record due to network error' });
     } finally {
       setLoading(false);
@@ -94,7 +93,7 @@ export default function NewEmployeePage() {
       <Breadcrumb
         items={[
           { label: 'Employees', href: '/admin/employees' },
-          { label: 'Add Employee' }
+          { label: 'Add Employee' },
         ]}
       />
 
@@ -112,11 +111,22 @@ export default function NewEmployeePage() {
       </div>
 
       <Card className="p-6">
-        {success ? (
+        {success && createdEmployee ? (
           <div className="flex flex-col items-center justify-center py-10 text-center text-slate-600">
             <CheckCircle className="w-12 h-12 text-emerald-500 mb-3" />
             <h3 className="text-base font-bold text-slate-800 mb-1">Employee Account Created!</h3>
-            <p className="text-xs text-slate-400">Success. Redirecting you back to the directory listing...</p>
+            <p className="text-xs text-slate-500 mb-4">
+              <span className="font-semibold text-slate-700">{createdEmployee.name}</span> has been registered as{' '}
+              <span className="font-mono font-bold text-slate-800">{createdEmployee.employeeId}</span>.
+            </p>
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-100 rounded-lg text-blue-700 text-xs font-semibold mb-4">
+              <Mail className="w-4 h-4 flex-shrink-0" />
+              <span>
+                A welcome email with login credentials has been sent to{' '}
+                <span className="font-bold">{createdEmployee.email}</span>
+              </span>
+            </div>
+            <p className="text-xxs text-slate-400">Redirecting you back to the directory listing...</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -126,16 +136,16 @@ export default function NewEmployeePage() {
               </p>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Employee ID"
-                placeholder="e.g. EMP008"
-                required
-                value={employeeId}
-                onChange={(e) => setEmployeeId(e.target.value)}
-                error={errors.employeeId}
-              />
+            {/* Info notice about auto-generated ID */}
+            <div className="flex items-start gap-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg">
+              <span className="text-slate-400 text-sm mt-0.5">ℹ️</span>
+              <p className="text-xs text-slate-500">
+                The <span className="font-semibold text-slate-700">Employee ID</span> will be automatically generated
+                (e.g., <span className="font-mono font-bold text-slate-700">EMP-009</span>) when the account is created.
+              </p>
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Full Name"
                 placeholder="e.g. Pathum Fernando"
@@ -144,9 +154,7 @@ export default function NewEmployeePage() {
                 onChange={(e) => setName(e.target.value)}
                 error={errors.name}
               />
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Email Address"
                 placeholder="e.g. employee@amraleaf.com"
@@ -156,7 +164,9 @@ export default function NewEmployeePage() {
                 onChange={(e) => setEmail(e.target.value)}
                 error={errors.email}
               />
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Temporary Password"
                 placeholder="Minimum 8 characters"
@@ -166,9 +176,7 @@ export default function NewEmployeePage() {
                 onChange={(e) => setPassword(e.target.value)}
                 error={errors.password}
               />
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Select
                   label="Department"
@@ -177,13 +185,15 @@ export default function NewEmployeePage() {
                   onChange={(e) => setDepartment(e.target.value)}
                 />
               </div>
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Select
                   label="Initial Account Status"
                   options={[
                     { value: 'ACTIVE', label: 'Active' },
-                    { value: 'INACTIVE', label: 'Inactive / Suspended' }
+                    { value: 'INACTIVE', label: 'Inactive / Suspended' },
                   ]}
                   value={status}
                   onChange={(e) => setStatus(e.target.value as 'ACTIVE' | 'INACTIVE')}
@@ -208,7 +218,7 @@ export default function NewEmployeePage() {
                 isLoading={loading}
                 leftIcon={<UserPlus className="w-3.5 h-3.5" />}
               >
-                CREATE ACCOUNT
+                CREATE ACCOUNT & SEND EMAIL
               </Button>
             </div>
           </form>
