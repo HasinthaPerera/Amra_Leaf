@@ -23,8 +23,7 @@ function createTransporter() {
 export async function sendWelcomeEmail(
   toEmail: string,
   employeeName: string,
-  employeeId: string,
-  temporaryPassword: string
+  employeeId: string
 ): Promise<void> {
   // If no email config is set, skip silently (dev mode without SMTP)
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
@@ -68,14 +67,14 @@ export async function sendWelcomeEmail(
 
               <p style="margin:0 0 20px;font-size:14px;color:#475569;line-height:1.7;">
                 Your employee account has been created on the <strong>Amra Leaf Cybersecurity Policy & Awareness Management System</strong>.
-                Please use the credentials below to log in and complete your mandatory security training.
+                Please use the account details below to log in and complete your mandatory security training.
               </p>
 
               <!-- Credentials Box -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin:0 0 24px;">
                 <tr>
                   <td style="padding:24px 28px;">
-                    <p style="margin:0 0 4px;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Your Login Credentials</p>
+                    <p style="margin:0 0 4px;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Your Account Details</p>
                     <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;">
                       <tr>
                         <td style="padding:8px 0;border-bottom:1px solid #e2e8f0;">
@@ -86,19 +85,11 @@ export async function sendWelcomeEmail(
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding:8px 0;border-bottom:1px solid #e2e8f0;">
+                        <td style="padding:8px 0;">
                           <span style="font-size:12px;color:#64748b;font-weight:600;">Email Address</span>
                         </td>
-                        <td style="padding:8px 0;border-bottom:1px solid #e2e8f0;text-align:right;">
-                          <span style="font-size:13px;color:#0f172a;font-weight:700;">${toEmail}</span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding:8px 0;">
-                          <span style="font-size:12px;color:#64748b;font-weight:600;">Temporary Password</span>
-                        </td>
                         <td style="padding:8px 0;text-align:right;">
-                          <span style="font-size:13px;color:#dc2626;font-weight:800;font-family:monospace;">${temporaryPassword}</span>
+                          <span style="font-size:13px;color:#0f172a;font-weight:700;">${toEmail}</span>
                         </td>
                       </tr>
                     </table>
@@ -110,7 +101,7 @@ export async function sendWelcomeEmail(
               <table width="100%" cellpadding="0" cellspacing="0" style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;margin:0 0 24px;">
                 <tr>
                   <td style="padding:14px 20px;">
-                    <p style="margin:0;font-size:12px;color:#92400e;font-weight:700;">⚠️ Important: Please keep your credentials confidential. Do not share your password with anyone, including IT staff.</p>
+                    <p style="margin:0;font-size:12px;color:#92400e;font-weight:700;">⚠️ Important: Please obtain your initial password directly from your system administrator.</p>
                   </td>
                 </tr>
               </table>
@@ -147,15 +138,14 @@ export async function sendWelcomeEmail(
   const textBody = `
 Welcome to Amra Leaf Cybersecurity System, ${employeeName}!
 
-Your account has been created. Here are your login credentials:
+Your account has been created. Here are your account details:
 
-  Employee ID:        ${employeeId}
-  Email Address:      ${toEmail}
-  Temporary Password: ${temporaryPassword}
+  Employee ID:   ${employeeId}
+  Email Address: ${toEmail}
 
 Login URL: ${loginUrl}
 
-IMPORTANT: Please keep your credentials confidential.
+IMPORTANT: Please obtain your initial password directly from your system administrator.
 
 This is an automated message. Do not reply to this email.
   `.trim();
@@ -164,7 +154,7 @@ This is an automated message. Do not reply to this email.
     await transporter.sendMail({
       from: fromAddress,
       to: toEmail,
-      subject: `Welcome to Amra Leaf — Your Account Credentials`,
+      subject: `Welcome to Amra Leaf — Account Created`,
       text: textBody,
       html: htmlBody,
     });

@@ -110,7 +110,7 @@ export async function POST(request: Request) {
     await logAuditActivity(auth.user.id, 'EMPLOYEE_CREATED', 'User', newEmployee.id);
 
     // Send welcome email (non-blocking — failure does not affect response)
-    sendWelcomeEmail(newEmployee.email, newEmployee.name, newEmployee.employeeId, password)
+    sendWelcomeEmail(newEmployee.email, newEmployee.name, newEmployee.employeeId)
       .catch((err) => console.error('[Email] Non-blocking welcome email error:', err));
 
     return NextResponse.json(newEmployee, { status: 201 });
