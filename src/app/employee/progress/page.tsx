@@ -48,7 +48,7 @@ export default function EmployeeProgressPage() {
     const items: { type: string; title: string; date: string; tag: string }[] = [];
 
     // Add signed policies
-    data.policyDetails.forEach((pp: any) => {
+    (data.policyDetails || []).forEach((pp: any) => {
       if (pp.status === 'SIGNED' && pp.acknowledgedAt) {
         items.push({
           type: 'policy',
@@ -60,7 +60,7 @@ export default function EmployeeProgressPage() {
     });
 
     // Add completed training
-    data.trainingDetails.forEach((tp: any) => {
+    (data.trainingDetails || []).forEach((tp: any) => {
       if (tp.status === 'COMPLETED' && tp.completedAt) {
         items.push({
           type: 'training',
@@ -72,7 +72,7 @@ export default function EmployeeProgressPage() {
     });
 
     // Add passed quizzes
-    data.quizDetails.forEach((qr: any) => {
+    (data.quizDetails || []).forEach((qr: any) => {
       if (qr.attemptsCount > 0 && qr.latestAttemptAt) {
         items.push({
           type: 'quiz',
@@ -178,7 +178,7 @@ export default function EmployeeProgressPage() {
           </h3>
           
           <div className="space-y-3">
-            {data.policyDetails.map((p: any) => (
+            {(data.policyDetails || []).map((p: any) => (
               <div key={p.id} className="flex justify-between items-center p-2.5 border border-slate-100 rounded-lg text-xs">
                 <div className="truncate max-w-[65%]">
                   <p className="font-bold text-slate-700 truncate">{p.title}</p>
@@ -208,7 +208,7 @@ export default function EmployeeProgressPage() {
           </h3>
 
           <div className="space-y-3">
-            {data.trainingDetails.map((t: any) => (
+            {(data.trainingDetails || []).map((t: any) => (
               <div key={t.id} className="flex justify-between items-center p-2.5 border border-slate-100 rounded-lg text-xs">
                 <div className="truncate max-w-[65%]">
                   <p className="font-bold text-slate-700 truncate">{t.title}</p>
@@ -237,7 +237,7 @@ export default function EmployeeProgressPage() {
           </h3>
 
           <div className="space-y-3">
-            {data.quizDetails.map((q: any) => (
+            {(data.quizDetails || []).map((q: any) => (
               <div key={q.id} className="flex justify-between items-center p-2.5 border border-slate-100 rounded-lg text-xs">
                 <div className="truncate max-w-[65%]">
                   <p className="font-bold text-slate-700 truncate">{q.title}</p>
