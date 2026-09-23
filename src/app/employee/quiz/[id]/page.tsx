@@ -49,12 +49,26 @@ export default function EmployeeQuizPage({ params }: EmployeeQuizPageProps) {
     return <div className="p-8 text-center text-slate-500">Loading quiz...</div>;
   }
 
-  if (!quiz) {
+  const hasValidQuestions =
+    quiz &&
+    Array.isArray(quiz.questions) &&
+    quiz.questions.length > 0;
+
+  const currentQuestion = hasValidQuestions ? quiz.questions[currentIdx] : null;
+
+  const hasValidOptions =
+    currentQuestion &&
+    Array.isArray(currentQuestion.options) &&
+    currentQuestion.options.length === 4;
+
+  if (!quiz || !hasValidQuestions || !currentQuestion || !hasValidOptions) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-        <AlertCircle className="w-12 h-12 mb-3 text-slate-300" />
-        <h2 className="font-bold text-sm text-slate-700">Quiz Not Found</h2>
-        <p className="text-xs text-slate-400 mb-4">No quiz was found with the identifier: "{id}".</p>
+        <AlertCircle className="w-12 h-12 mb-3 text-amber-500" />
+        <h2 className="font-bold text-sm text-slate-700">Quiz Content Unavailable</h2>
+        <p className="text-xs text-slate-400 mb-4 max-w-md text-center">
+          Quiz content could not be loaded. Please return to the quiz list and try again.
+        </p>
         <Button variant="outline" size="sm" onClick={() => router.push('/employee/quiz')}>
           Return to Directory
         </Button>
@@ -62,7 +76,6 @@ export default function EmployeeQuizPage({ params }: EmployeeQuizPageProps) {
     );
   }
 
-  const currentQuestion = quiz.questions[currentIdx];
   const isLastQuestion = currentIdx === quiz.questions.length - 1;
   const isFirstQuestion = currentIdx === 0;
 

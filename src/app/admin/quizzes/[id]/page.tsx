@@ -52,7 +52,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
           setDescription(qz.description);
           setTrainingModuleId(qz.trainingId || '');
           setQuestions(
-            qz.questions.map((q: any) => ({
+            (qz.questions || []).map((q: any) => ({
               id: q.id,
               question: q.question,
               options: [q.optionA, q.optionB, q.optionC, q.optionD],
@@ -63,7 +63,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
 
         if (trainingRes.ok) {
           const tData = await trainingRes.json();
-          const opts = tData.map((t: any) => ({ value: t.id, label: t.title }));
+          const opts = (tData || []).map((t: any) => ({ value: t.id, label: t.title }));
           setTrainingModules([{ value: '', label: 'Unlinked / General Security' }, ...opts]);
         }
       } catch (err) {
