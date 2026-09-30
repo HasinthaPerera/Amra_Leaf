@@ -34,6 +34,12 @@ export default function EmployeeQuizPage({ params }: EmployeeQuizPageProps) {
         const res = await fetch(`/api/employee/quizzes/${id}`);
         if (res.ok) {
           const data = await res.json();
+          if (data.questions) {
+            data.questions = data.questions.map((q: any) => ({
+              ...q,
+              options: [q.optionA, q.optionB, q.optionC, q.optionD]
+            }));
+          }
           setQuiz(data);
         }
       } catch (err) {
