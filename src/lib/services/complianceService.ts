@@ -5,7 +5,6 @@ export interface EmployeeComplianceResult {
   userId: string;
   name: string;
   email: string;
-  department: string;
   employeeId: string;
   
   // Percentages
@@ -278,7 +277,6 @@ export async function calculateEmployeeCompliance(userId: string): Promise<Emplo
     userId: user.id,
     name: user.name,
     email: user.email,
-    department: user.department,
     employeeId: user.employeeId,
     policyCompletionRate: policyPct || 0,
     trainingCompletionRate: trainingPct || 0,

@@ -17,7 +17,6 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
         employeeId: true,
         name: true,
         email: true,
-        department: true,
         status: true,
         role: true,
         createdAt: true,
@@ -57,8 +56,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
 
     const body = await request.json();
     
-    // Only extract whitelisted fields
-    let { name, email, department, status } = body;
+    let { name, email, status } = body;
     
     const updateData: any = {};
 
@@ -76,10 +74,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       updateData.email = email;
     }
 
-    if (department !== undefined) {
-      if (!department.trim()) return NextResponse.json({ error: 'Department is required' }, { status: 400 });
-      updateData.department = department.trim();
-    }
+
 
     if (status !== undefined) {
       if (status !== 'ACTIVE' && status !== 'INACTIVE') {
@@ -96,7 +91,6 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
         employeeId: true,
         name: true,
         email: true,
-        department: true,
         status: true,
         createdAt: true,
       },

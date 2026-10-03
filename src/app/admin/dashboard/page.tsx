@@ -126,7 +126,7 @@ export default function AdminDashboardPage() {
                 <thead>
                   <tr className="border-b border-slate-100 text-xxs font-bold text-slate-400 uppercase tracking-wider">
                     <th className="pb-3 font-semibold">Employee</th>
-                    <th className="pb-3 font-semibold">Department</th>
+
                     <th className="pb-3 font-semibold text-center">Score</th>
                     <th className="pb-3 font-semibold text-right">Status</th>
                   </tr>
@@ -140,7 +140,7 @@ export default function AdminDashboardPage() {
                         </Link>
                         <p className="text-xxs text-slate-400 font-medium">{emp.userEmail}</p>
                       </td>
-                      <td className="py-3.5 text-xs text-slate-600 font-semibold">{emp.department}</td>
+
                       <td className="py-3.5 text-center">
                         <div className="inline-flex flex-col items-center">
                           <span className={`text-xs font-extrabold ${emp.overallScore >= 70 ? 'text-emerald-600' : emp.overallScore >= 50 ? 'text-amber-600' : 'text-red-500'}`}>

@@ -19,7 +19,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
         attempts: {
           include: {
             user: {
-              select: { id: true, name: true, employeeId: true, department: true }
+              select: { id: true, name: true, employeeId: true }
             }
           },
           orderBy: { submittedAt: 'desc' }

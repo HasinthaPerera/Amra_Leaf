@@ -21,7 +21,6 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
                 employeeId: true,
                 name: true,
                 email: true,
-                department: true,
                 status: true,
               }
             }

@@ -294,7 +294,7 @@ export default function EditTrainingPage({ params }: EditTrainingPageProps) {
                     <tr key={emp.id} className="hover:bg-slate-50/30">
                       <td className="px-5 py-4">
                         <p className="font-bold text-slate-800">{emp.name}</p>
-                        <p className="text-xxs text-slate-400">{emp.department}</p>
+
                       </td>
                       <td className="px-5 py-4">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xxs font-bold uppercase tracking-wider border ${

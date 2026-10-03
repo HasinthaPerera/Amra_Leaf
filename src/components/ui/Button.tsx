@@ -20,7 +20,7 @@ export function Button({
   rightIcon,
   ...props
 }: ButtonProps) {
-  const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-lg';
+  const baseStyles = 'inline-flex items-center justify-center font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-lg';
   
   const variants = {
     primary: 'bg-blue-600 hover:bg-blue-700 text-white border border-transparent focus:ring-blue-500 shadow-sm shadow-blue-500/10',

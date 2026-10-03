@@ -24,7 +24,7 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
   const [compliance, setCompliance] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', email: '', department: '' });
+  const [editForm, setEditForm] = useState({ name: '', email: '' });
   const [updateLoading, setUpdateLoading] = useState(false);
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
     .then(([empData, compData]) => {
       if (!empData.error) {
         setEmployee(empData);
-        setEditForm({ name: empData.name, email: empData.email, department: empData.department });
+        setEditForm({ name: empData.name, email: empData.email });
       }
       if (!compData.error) {
         setCompliance(compData);
@@ -133,21 +133,7 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
                   value={editForm.email} 
                   onChange={e => setEditForm({ ...editForm, email: e.target.value })} 
                 />
-                <Select
-                  label="Department"
-                  options={[
-                    { value: 'Management', label: 'Management' },
-                    { value: 'Supervisor', label: 'Supervisor' },
-                    { value: 'POS / Cashier', label: 'POS / Cashier' },
-                    { value: 'Front Office / Service', label: 'Front Office / Service' },
-                    { value: 'Kitchen', label: 'Kitchen' },
-                    { value: 'Delivery', label: 'Delivery' },
-                    { value: 'Accounts', label: 'Accounts' },
-                    { value: 'Marketing / Social Media', label: 'Marketing / Social Media' }
-                  ]}
-                  value={editForm.department}
-                  onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
-                />
+
                 <Button 
                   variant="primary" 
                   size="sm" 
@@ -196,13 +182,7 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 text-slate-600">
-                  <Building className="w-4 h-4 text-slate-400" />
-                  <div className="text-xs font-medium">
-                    <span className="block font-bold text-slate-700">Department</span>
-                    {employee.department}
-                  </div>
-                </div>
+
 
                 <div className="flex items-center gap-2.5 text-slate-600">
                   <Clock className="w-4 h-4 text-slate-400" />

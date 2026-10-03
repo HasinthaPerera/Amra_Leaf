@@ -401,7 +401,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                   <tr key={i} className="hover:bg-slate-50/30">
                     <td className="px-5 py-3">
                       <p className="font-bold text-slate-800">{r.user?.name}</p>
-                      <p className="text-xxs text-slate-400 font-medium">{r.user?.employeeId} • {r.user?.department}</p>
+                      <p className="text-xxs text-slate-400 font-medium">{r.user?.employeeId}</p>
                     </td>
                     <td className="px-5 py-3">
                       <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${r.latestAttempt.passed ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>

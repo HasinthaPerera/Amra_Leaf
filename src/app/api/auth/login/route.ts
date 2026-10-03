@@ -68,7 +68,6 @@ export async function POST(request: Request) {
         name: user.name,
         email: user.email,
         role: user.role.toLowerCase(), // 'admin' or 'employee' to match UI expectations
-        department: user.department,
         status: user.status.toLowerCase(),
       },
     });

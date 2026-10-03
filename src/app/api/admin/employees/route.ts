@@ -17,7 +17,6 @@ export async function GET() {
         employeeId: true,
         name: true,
         email: true,
-        department: true,
         status: true,
         createdAt: true,
       },
@@ -61,11 +60,10 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    let { name, email, department, password, status } = body;
+    let { name, email, password, status } = body;
 
     if (!name || !name.trim()) return NextResponse.json({ error: 'Full name is required' }, { status: 400 });
     if (!email || !email.trim()) return NextResponse.json({ error: 'Email address is required' }, { status: 400 });
-    if (!department || !department.trim()) return NextResponse.json({ error: 'Department is required' }, { status: 400 });
     if (!password || password.length < 8) return NextResponse.json({ error: 'Password must contain at least 8 characters.' }, { status: 400 });
 
     email = email.trim().toLowerCase();
@@ -91,7 +89,6 @@ export async function POST(request: Request) {
         employeeId,
         name: name.trim(),
         email,
-        department: department.trim(),
         passwordHash,
         role: 'EMPLOYEE',
         status,
@@ -101,7 +98,6 @@ export async function POST(request: Request) {
         employeeId: true,
         name: true,
         email: true,
-        department: true,
         status: true,
         createdAt: true,
       },

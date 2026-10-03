@@ -38,7 +38,6 @@ model User {
   email        String      @unique
   passwordHash String
   role         UserRole    @default(EMPLOYEE)
-  department   String
   status       UserStatus  @default(ACTIVE)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt

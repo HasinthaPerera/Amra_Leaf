@@ -170,7 +170,7 @@ export default function EmployeeTrainingDetailPage({ params }: EmployeeTrainingD
 
             {/* Markdown body render */}
             <div className={`prose prose-slate max-w-none text-slate-600 text-xs leading-relaxed whitespace-pre-wrap font-sans transition-opacity duration-300 ${status === 'NOT_STARTED' ? 'opacity-50 select-none blur-[1px]' : ''}`}>
-              {module.content}
+              {module.content?.replace(/^#+\s+/gm, '')?.replace(/\*\*/g, '')}
             </div>
           </Card>
         </div>

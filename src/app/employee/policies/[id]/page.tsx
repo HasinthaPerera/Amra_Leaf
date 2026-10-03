@@ -133,9 +133,8 @@ export default function EmployeePolicyDetailPage({ params }: EmployeePolicyDetai
               <span>Published: <span className="text-slate-600">{policy.publishedDate}</span></span>
             </div>
 
-            {/* Markdown rendered body preview */}
             <div className="prose prose-slate max-w-none text-slate-600 text-xs leading-relaxed whitespace-pre-wrap font-sans">
-              {policy.content}
+              {policy.content?.replace(/^#+\s+/gm, '')?.replace(/\*\*/g, '')}
             </div>
           </Card>
         </div>
