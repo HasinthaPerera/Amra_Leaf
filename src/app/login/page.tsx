@@ -7,6 +7,7 @@ import { useSimulation } from '@/context/SimulationContext';
 import { Button } from '@/components/ui/Button';
 import { Input, PasswordInput } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Feedback';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const { login, currentUser } = useSimulation();
@@ -69,20 +70,30 @@ export default function LoginPage() {
       </div>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md z-10">
-        <div className="flex justify-center items-center gap-2 mb-3">
-          <div className="bg-blue-600 p-2 rounded-xl text-white shadow-lg shadow-blue-500/30">
-            <ShieldCheck className="w-8 h-8" />
-          </div>
-          <span className="text-2xl font-black text-white tracking-tight uppercase">
-            Amra <span className="text-blue-500">Leaf</span>
-          </span>
+        <div className="relative flex justify-center items-center mb-8 mt-4">
+          {/* Subtle green glow for premium corporate branding */}
+          <div className="absolute inset-0 bg-emerald-500/15 blur-[40px] rounded-full scale-[1.7]" />
+          <Image
+            src="/images/amra-leaf-logo-transparent.png"
+            alt="Amra Leaf Restaurant logo"
+            width={280}
+            height={140}
+            className="relative object-contain h-32 w-auto drop-shadow-2xl"
+            priority
+          />
         </div>
-        <h2 className="text-center text-lg font-bold text-slate-300 uppercase tracking-widest leading-none mb-1">
-          Cybersecurity Portal
-        </h2>
-        <p className="text-center text-xs text-slate-500 font-semibold tracking-wider uppercase mb-8">
-          Policy & Awareness Management System
-        </p>
+        <div className="text-center mb-10">
+          <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-200 via-white to-slate-200 uppercase tracking-[0.2em] mb-3">
+            Cybersecurity Portal
+          </h2>
+          <div className="flex items-center justify-center gap-3">
+            <div className="h-[1px] w-8 bg-slate-700/80"></div>
+            <p className="text-xs text-blue-400/90 font-semibold tracking-[0.15em] uppercase">
+              Policy & Awareness System
+            </p>
+            <div className="h-[1px] w-8 bg-slate-700/80"></div>
+          </div>
+        </div>
       </div>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md z-10 px-4">

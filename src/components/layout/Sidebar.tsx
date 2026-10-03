@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, Users, FileText, GraduationCap, 
@@ -66,11 +67,14 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
         <div>
           {/* Logo Brand Header */}
           <div className="flex items-center justify-between px-5 h-16 border-b border-slate-800">
-            <Link href="/" className="flex items-center gap-2">
-              <ShieldAlert className="w-6 h-6 text-blue-500" />
-              <span className="text-base font-extrabold text-white tracking-tight uppercase">
-                AMRA <span className="text-blue-500">LEAF</span>
-              </span>
+            <Link href="/" className="flex items-center">
+              <Image 
+                src="/images/amra-leaf-logo-transparent.png" 
+                alt="Amra Leaf Restaurant logo" 
+                width={120} 
+                height={40} 
+                className="object-contain h-10 w-auto" 
+              />
             </Link>
             <button 
               onClick={onClose}
