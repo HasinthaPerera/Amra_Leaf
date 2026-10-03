@@ -121,7 +121,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
                   {currentUser?.name || 'Loading Name...'}
                 </p>
                 <p className="text-xxs font-semibold text-slate-500 uppercase tracking-wider truncate">
-                  {role === 'admin' ? 'System Admin' : currentUser?.department || 'Employee'}
+                  {role === 'admin' ? 'System Admin' : 'Employee'}
                 </p>
               </div>
             </div>

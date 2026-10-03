@@ -12,7 +12,7 @@ export default function NewEmployeePage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [department, setDepartment] = useState('Management');
+
   const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE');
 
   const [loading, setLoading] = useState(false);
@@ -21,17 +21,7 @@ export default function NewEmployeePage() {
   const [createdEmployee, setCreatedEmployee] = useState<{ name: string; email: string; employeeId: string } | null>(null);
   const router = useRouter();
 
-  const deptOptions = [
-    { value: 'Management', label: 'Management' },
-    { value: 'Supervisor', label: 'Supervisor' },
-    { value: 'POS / Cashier', label: 'POS / Cashier' },
-    { value: 'Front Office / Service', label: 'Front Office / Service' },
-    { value: 'Kitchen', label: 'Kitchen' },
-    { value: 'Delivery', label: 'Delivery' },
-    { value: 'Accounts', label: 'Accounts' },
-    { value: 'Marketing / Social Media', label: 'Marketing / Social Media' },
-    { value: 'Cybersecurity Operations', label: 'Cybersecurity Operations' },
-  ];
+
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -63,7 +53,6 @@ export default function NewEmployeePage() {
           name,
           email,
           password,
-          department,
           status,
         }),
       });
@@ -177,17 +166,6 @@ export default function NewEmployeePage() {
                 error={errors.password}
               />
 
-              <div>
-                <Select
-                  label="Department"
-                  options={deptOptions}
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Select
                   label="Initial Account Status"

@@ -72,7 +72,6 @@ export type SafeUser = {
   name: string;
   email: string;
   role: 'ADMIN' | 'EMPLOYEE';
-  department: string;
   status: 'ACTIVE' | 'INACTIVE';
 };
 
@@ -112,14 +111,13 @@ export async function getCurrentUser(): Promise<SafeUser | null> {
       return null;
     }
 
-    const { id, employeeId, name, email, role, department, status } = session.user;
+    const { id, employeeId, name, email, role, status } = session.user;
     return {
       id,
       employeeId,
       name,
       email,
       role: role as 'ADMIN' | 'EMPLOYEE',
-      department,
       status: status as 'ACTIVE' | 'INACTIVE',
     };
   } catch (error) {

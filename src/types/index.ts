@@ -3,7 +3,6 @@ export interface User {
   name: string;
   email: string;
   role: 'admin' | 'employee';
-  department: string;
   status: 'active' | 'inactive';
   lastActivity: string;
 }
@@ -82,7 +81,6 @@ export interface ComplianceRecord {
   userId: string;
   userName: string;
   userEmail: string;
-  department: string;
   policyCompletionRate: number; // percentage
   trainingCompletionRate: number; // percentage
   averageQuizScore: number; // percentage

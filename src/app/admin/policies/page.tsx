@@ -269,7 +269,7 @@ export default function PoliciesListPage() {
             
             {/* Render formatted content markdown preview */}
             <div className="prose prose-slate max-w-none text-xs leading-relaxed text-slate-600 whitespace-pre-wrap font-sans p-4 bg-slate-50 border border-slate-100 rounded-xl max-h-[50vh] overflow-y-auto">
-              {activePreviewPolicy.content}
+              {activePreviewPolicy.content?.replace(/^#+\s+/gm, '')?.replace(/\*\*/g, '')}
             </div>
           </div>
         )}

@@ -144,7 +144,7 @@ export default function ComplianceMonitorPage() {
                         <Link href={`/admin/employees/${rec.userId}`} className="font-bold text-slate-800 hover:text-blue-600 transition-colors">
                           {rec.name}
                         </Link>
-                        <p className="text-xxs text-slate-400 font-semibold">{rec.department}</p>
+
                       </td>
 
                       <td className="px-5 py-4 text-center">

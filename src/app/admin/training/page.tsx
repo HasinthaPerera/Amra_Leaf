@@ -229,7 +229,7 @@ export default function TrainingListPage() {
             </p>
 
             <div className="prose prose-slate max-w-none text-xs leading-relaxed text-slate-600 whitespace-pre-wrap font-sans p-4 bg-slate-50 border border-slate-100 rounded-xl max-h-[50vh] overflow-y-auto">
-              {activePreviewModule.content}
+              {activePreviewModule.content?.replace(/^#+\s+/gm, '')?.replace(/\*\*/g, '')}
             </div>
           </div>
         )}

@@ -50,7 +50,7 @@ export function Navbar({ role, onMenuToggle, title }: NavbarProps) {
               {currentUser?.name || 'User'}
             </p>
             <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-              {role === 'admin' ? 'Administrator' : currentUser?.department || 'Employee'}
+              {role === 'admin' ? 'Administrator' : 'Employee'}
             </p>
           </div>
         </div>

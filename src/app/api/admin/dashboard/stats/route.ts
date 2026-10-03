@@ -42,7 +42,6 @@ export async function GET() {
         userId: emp.userId,
         userName: emp.name,
         userEmail: emp.email,
-        department: emp.department,
         overallScore: emp.overallComplianceRate,
         overallStatus: emp.overallStatus
       }));

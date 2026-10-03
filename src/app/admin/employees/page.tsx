@@ -12,7 +12,6 @@ export default function EmployeesListPage() {
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [deptFilter, setDeptFilter] = useState('ALL');
 
   useEffect(() => {
     fetch('/api/admin/employees')
@@ -26,12 +25,7 @@ export default function EmployeesListPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Dynamic list of departments for filtering
-  const departments = useMemo(() => {
-    const depts = new Set<string>();
-    employees.forEach((emp) => depts.add(emp.department));
-    return ['ALL', ...Array.from(depts)];
-  }, [employees]);
+
 
   // Filtered employees list
   const filteredEmployees = useMemo(() => {
@@ -41,11 +35,9 @@ export default function EmployeesListPage() {
         emp.email.toLowerCase().includes(search.toLowerCase()) ||
         emp.employeeId.toLowerCase().includes(search.toLowerCase());
       
-      const matchDept = deptFilter === 'ALL' || emp.department === deptFilter;
-      
-      return matchSearch && matchDept;
+      return matchSearch;
     });
-  }, [employees, search, deptFilter]);
+  }, [employees, search]);
 
   const toggleStatus = async (id: string, currentStatus: 'ACTIVE' | 'INACTIVE') => {
     const nextStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
@@ -95,22 +87,7 @@ export default function EmployeesListPage() {
             onSearch={(val) => setSearch(val)} 
           />
         </div>
-        <div className="w-full md:w-64">
-          <label className="block text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1">
-            Filter by Department
-          </label>
-          <select
-            value={deptFilter}
-            onChange={(e) => setDeptFilter(e.target.value)}
-            className="w-full px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
-          >
-            {departments.map((dept) => (
-              <option key={dept} value={dept}>
-                {dept === 'ALL' ? 'All Departments' : dept}
-              </option>
-            ))}
-          </select>
-        </div>
+
       </Card>
 
       {/* Directory Table Card */}
@@ -119,7 +96,7 @@ export default function EmployeesListPage() {
           <div className="flex flex-col items-center justify-center py-12 text-slate-400">
             <ShieldAlert className="w-12 h-12 mb-3 text-slate-300" />
             <p className="font-bold text-sm text-slate-700">No Employees Found</p>
-            <p className="text-xs text-slate-400">Try adjusting your search query or department filter.</p>
+            <p className="text-xs text-slate-400">Try adjusting your search query.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -128,7 +105,7 @@ export default function EmployeesListPage() {
                 <tr className="border-b border-slate-100 bg-slate-50/50 text-xxs font-bold text-slate-400 uppercase tracking-wider">
                   <th className="px-5 py-3.5 font-semibold">Employee ID</th>
                   <th className="px-5 py-3.5 font-semibold">Name & Email</th>
-                  <th className="px-5 py-3.5 font-semibold">Department</th>
+
                   <th className="px-5 py-3.5 font-semibold">Status</th>
                   <th className="px-5 py-3.5 font-semibold">Created Date</th>
                   <th className="px-5 py-3.5 font-semibold text-right">Actions</th>
@@ -144,9 +121,7 @@ export default function EmployeesListPage() {
                       <p className="font-bold text-slate-800 leading-snug">{emp.name}</p>
                       <p className="text-xxs text-slate-400 font-medium leading-none">{emp.email}</p>
                     </td>
-                    <td className="px-5 py-4 text-xs font-semibold text-slate-600">
-                      {emp.department}
-                    </td>
+
                     <td className="px-5 py-4">
                       <StatusBadge status={emp.status} />
                     </td>
