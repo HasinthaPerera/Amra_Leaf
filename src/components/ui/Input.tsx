@@ -231,7 +231,7 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
             `}
             {...props}
           />
-          <span className="ml-2 text-sm text-slate-650 font-medium">{label}</span>
+          <span className="ml-2 text-[15px] text-[#0F172A] font-medium">{label}</span>
         </label>
         {error && <p className="mt-1 text-xs text-red-600 font-medium">{error}</p>}
       </div>

@@ -37,7 +37,7 @@ export default function EmployeeQuizPage({ params }: EmployeeQuizPageProps) {
           if (data.questions) {
             data.questions = data.questions.map((q: any) => ({
               ...q,
-              options: [q.optionA, q.optionB, q.optionC, q.optionD]
+              options: q.options ? q.options : [q.optionA, q.optionB, q.optionC, q.optionD]
             }));
           }
           setQuiz(data);
@@ -257,7 +257,7 @@ export default function EmployeeQuizPage({ params }: EmployeeQuizPageProps) {
                     <Radio
                       id={`opt_${oIdx}`}
                       label={
-                        <span className={`text-xs font-semibold ${isSelected ? 'text-slate-800 font-extrabold' : 'text-slate-600'}`}>
+                        <span className={`text-[15px] md:text-sm font-medium ${isSelected ? 'text-[#0F172A] font-semibold' : 'text-[#1E293B]'}`}>
                           {opt}
                         </span>
                       }
