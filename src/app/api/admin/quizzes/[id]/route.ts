@@ -86,10 +86,10 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
             data: {
               quizId: id,
               question: q.question,
-              optionA: q.optionA,
-              optionB: q.optionB,
-              optionC: q.optionC,
-              optionD: q.optionD,
+              optionA: q.options && q.options.length > 0 ? q.options[0] : q.optionA,
+              optionB: q.options && q.options.length > 1 ? q.options[1] : q.optionB,
+              optionC: q.options && q.options.length > 2 ? q.options[2] : q.optionC,
+              optionD: q.options && q.options.length > 3 ? q.options[3] : q.optionD,
               correctAnswer: parseInt(q.correctAnswer, 10),
             }
           });
