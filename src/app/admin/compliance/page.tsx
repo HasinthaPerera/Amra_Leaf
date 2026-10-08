@@ -149,7 +149,8 @@ export default function ComplianceMonitorPage() {
 
                       <td className="px-5 py-4 text-center">
                         <div className="flex flex-col items-center">
-                          <span className="text-xs font-bold mb-1 text-slate-700">{rec.policyCompletionRate}%</span>
+                          <span className="text-xs font-bold mb-0.5 text-slate-700">{rec.policyCompletionRate}%</span>
+                          <span className="text-[10px] text-slate-400 font-medium mb-1">{rec.policiesAcknowledged}/{rec.policiesRequired}</span>
                           <div className="w-24">
                             <ProgressBar value={rec.policyCompletionRate} />
                           </div>
@@ -158,7 +159,8 @@ export default function ComplianceMonitorPage() {
 
                       <td className="px-5 py-4 text-center">
                         <div className="flex flex-col items-center">
-                          <span className="text-xs font-bold mb-1 text-slate-700">{rec.trainingCompletionRate}%</span>
+                          <span className="text-xs font-bold mb-0.5 text-slate-700">{rec.trainingCompletionRate}%</span>
+                          <span className="text-[10px] text-slate-400 font-medium mb-1">{rec.trainingCompleted}/{rec.trainingRequired}</span>
                           <div className="w-24">
                             <ProgressBar value={rec.trainingCompletionRate} />
                           </div>
@@ -167,7 +169,8 @@ export default function ComplianceMonitorPage() {
 
                       <td className="px-5 py-4 text-center">
                         <div className="flex flex-col items-center">
-                          <span className="text-xs font-bold mb-1 text-slate-700">{rec.quizPassRate}%</span>
+                          <span className="text-xs font-bold mb-0.5 text-slate-700">{rec.quizPassRate}%</span>
+                          <span className="text-[10px] text-slate-400 font-medium mb-1">{rec.quizzesPassed}/{rec.quizzesRequired}</span>
                           <div className="w-24">
                             <ProgressBar value={rec.quizPassRate} />
                           </div>

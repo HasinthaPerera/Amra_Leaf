@@ -154,24 +154,36 @@ export default function EmployeeDashboardPage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {pendingTraining.map((t: any) => {
+                  const isPendingAssessment = t.status === 'PENDING_ASSESSMENT';
                   return (
-                    <Card key={t.id} className="p-4 flex flex-col justify-between h-36 border border-slate-100">
+                    <Card key={t.id} className="p-4 flex flex-col justify-between min-h-36 border border-slate-100">
                       <div>
-                        <h4 className="text-xs font-bold text-slate-800 leading-snug line-clamp-1 mb-1">{t.title}</h4>
+                        <div className="flex justify-between items-start gap-1.5 mb-1">
+                          <h4 className="text-xs font-bold text-slate-800 leading-snug line-clamp-1 flex-1">{t.title}</h4>
+                          {isPendingAssessment && (
+                            <span className="bg-amber-50 text-amber-700 border border-amber-200 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase flex-shrink-0">
+                              Assessment Pending
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xxs text-slate-400 line-clamp-2 leading-relaxed mb-3">{t.description}</p>
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between items-center text-xxs font-bold text-slate-400">
                           <span>{t.estimatedDuration}</span>
-                          <span>{t.progressPercent}% Done</span>
+                          <span>{t.progressPercent}% Content</span>
                         </div>
                         <div className="flex justify-between items-center gap-4">
                           <div className="flex-1">
                             <ProgressBar value={t.progressPercent} />
                           </div>
                           <Link href={`/employee/training/${t.id}`}>
-                            <Button variant="outline" size="sm" className="py-1 px-2.5 text-xxs border border-slate-200">
-                              Study
+                            <Button 
+                              variant={isPendingAssessment ? 'primary' : 'outline'} 
+                              size="sm" 
+                              className={`py-1 px-2.5 text-xxs ${isPendingAssessment ? 'bg-purple-600 hover:bg-purple-500 text-white' : 'border border-slate-200'}`}
+                            >
+                              {isPendingAssessment ? 'Take Quiz' : 'Study'}
                             </Button>
                           </Link>
                         </div>

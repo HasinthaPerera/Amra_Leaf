@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   ShieldCheck, AlertTriangle, XCircle, Info, CheckCircle2, 
-  Loader2, FolderOpen, RefreshCcw 
+  Loader2, FolderOpen, RefreshCcw, Clock 
 } from 'lucide-react';
 import Button from './Button';
 
@@ -31,18 +31,23 @@ export function Badge({ children, variant = 'slate', className = '' }: BadgeProp
 
 // StatusBadge
 interface StatusBadgeProps {
-  status: 'COMPLIANT' | 'PENDING' | 'INCOMPLETE' | 'PUBLISHED' | 'DRAFT' | 'ARCHIVED' | 'ACKNOWLEDGED' | 'NOT ACKNOWLEDGED' | 'PASSED' | 'FAILED' | 'active' | 'inactive';
+  status: 'COMPLIANT' | 'PENDING' | 'INCOMPLETE' | 'PUBLISHED' | 'DRAFT' | 'ARCHIVED' | 'ACKNOWLEDGED' | 'NOT ACKNOWLEDGED' | 'PASSED' | 'FAILED' | 'active' | 'inactive' | 'NOT STARTED' | 'NOT_STARTED' | 'IN PROGRESS' | 'IN_PROGRESS' | 'PENDING ASSESSMENT' | 'PENDING_ASSESSMENT' | 'COMPLETED' | 'RETAKE AVAILABLE' | 'RETAKE_AVAILABLE' | 'LOCKED' | 'UNLOCKED' | string;
   className?: string;
 }
 
 export function StatusBadge({ status, className = '' }: StatusBadgeProps) {
-  const normalized = status.toUpperCase();
+  const normalized = (status || '').toUpperCase().trim();
 
   let variant: 'slate' | 'blue' | 'emerald' | 'orange' | 'red' | 'purple' = 'slate';
   let icon: React.ReactNode = null;
   let text = status;
 
   switch (normalized) {
+    case 'COMPLETED':
+      variant = 'emerald';
+      icon = <ShieldCheck className="w-3.5 h-3.5 mr-1 flex-shrink-0" />;
+      text = 'COMPLETED';
+      break;
     case 'COMPLIANT':
     case 'ACKNOWLEDGED':
     case 'PASSED':
@@ -50,10 +55,44 @@ export function StatusBadge({ status, className = '' }: StatusBadgeProps) {
       variant = 'emerald';
       icon = <ShieldCheck className="w-3.5 h-3.5 mr-1 flex-shrink-0" />;
       break;
+    case 'PENDING_ASSESSMENT':
+    case 'PENDING ASSESSMENT':
+      variant = 'orange';
+      icon = <AlertTriangle className="w-3.5 h-3.5 mr-1 flex-shrink-0" />;
+      text = 'PENDING ASSESSMENT';
+      break;
+    case 'RETAKE_AVAILABLE':
+    case 'RETAKE AVAILABLE':
+      variant = 'orange';
+      icon = <AlertTriangle className="w-3.5 h-3.5 mr-1 flex-shrink-0" />;
+      text = 'RETAKE AVAILABLE';
+      break;
     case 'PENDING':
     case 'NOT ACKNOWLEDGED':
       variant = 'orange';
       icon = <AlertTriangle className="w-3.5 h-3.5 mr-1 flex-shrink-0" />;
+      break;
+    case 'IN_PROGRESS':
+    case 'IN PROGRESS':
+      variant = 'blue';
+      icon = <Clock className="w-3.5 h-3.5 mr-1 flex-shrink-0" />;
+      text = 'IN PROGRESS';
+      break;
+    case 'NOT_STARTED':
+    case 'NOT STARTED':
+      variant = 'slate';
+      icon = <Info className="w-3.5 h-3.5 mr-1 flex-shrink-0" />;
+      text = 'NOT STARTED';
+      break;
+    case 'LOCKED':
+      variant = 'slate';
+      icon = <Info className="w-3.5 h-3.5 mr-1 flex-shrink-0" />;
+      text = 'LOCKED';
+      break;
+    case 'UNLOCKED':
+      variant = 'blue';
+      icon = <CheckCircle2 className="w-3.5 h-3.5 mr-1 flex-shrink-0" />;
+      text = 'UNLOCKED';
       break;
     case 'INCOMPLETE':
     case 'FAILED':
@@ -66,9 +105,6 @@ export function StatusBadge({ status, className = '' }: StatusBadgeProps) {
       icon = <CheckCircle2 className="w-3.5 h-3.5 mr-1 flex-shrink-0" />;
       break;
     case 'DRAFT':
-      variant = 'slate';
-      icon = <Info className="w-3.5 h-3.5 mr-1 flex-shrink-0" />;
-      break;
     case 'ARCHIVED':
       variant = 'slate';
       icon = <Info className="w-3.5 h-3.5 mr-1 flex-shrink-0" />;

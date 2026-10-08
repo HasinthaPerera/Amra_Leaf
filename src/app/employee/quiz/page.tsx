@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { HelpCircle, Clock, BookOpen, AlertCircle, ShieldCheck, RefreshCw, PlayCircle } from 'lucide-react';
+import { HelpCircle, Clock, BookOpen, AlertCircle, ShieldCheck, RefreshCw, PlayCircle, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { StatusBadge } from '@/components/ui/Feedback';
 
 interface EmployeeQuiz {
   id: string;
@@ -14,7 +15,9 @@ interface EmployeeQuiz {
   trainingId: string;
   trainingTitle: string;
   questionCount: number;
-  state: 'LOCKED' | 'AVAILABLE' | 'PASSED';
+  state: 'LOCKED' | 'UNLOCKED' | 'AVAILABLE' | 'RETAKE_AVAILABLE' | 'PASSED';
+  moduleStatus?: 'NOT_STARTED' | 'IN_PROGRESS' | 'PENDING_ASSESSMENT' | 'COMPLETED';
+  isTrainingCompleted?: boolean;
   latestAttempt: any;
 }
 
@@ -65,24 +68,21 @@ export default function EmployeeQuizListPage() {
             const percentage = q.latestAttempt?.percentage || 0;
             const isLocked = q.state === 'LOCKED';
             const requirementPassed = q.state === 'PASSED';
+            const isRetakeAvailable = q.state === 'RETAKE_AVAILABLE' || (isAttempted && !latestPassed && !isLocked);
 
             return (
-               <Card key={q.id} className={`flex flex-col justify-between p-5 border min-h-56 relative overflow-hidden ${isLocked ? 'border-slate-100 opacity-70' : 'border-slate-200'}`}>
-                <div className="space-y-4">
+              <Card key={q.id} className={`flex flex-col justify-between p-5 border min-h-60 relative overflow-hidden ${isLocked ? 'border-slate-100 opacity-75' : 'border-slate-200'}`}>
+                <div className="space-y-3.5">
                   <div className="flex justify-between items-center">
-                    <span className="text-xxs font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border border-slate-100 px-2 py-0.5 rounded">
-                      Category: {q.trainingTitle || 'General Cybersecurity'}
+                    <span className="text-xxs font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border border-slate-100 px-2 py-0.5 rounded truncate max-w-[55%]">
+                      {q.trainingTitle || 'General Cybersecurity'}
                     </span>
                     
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xxs font-bold uppercase tracking-wider border ${
-                      !isAttempted 
-                        ? 'bg-slate-50 text-slate-500 border-slate-100'
-                        : latestPassed
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                        : 'bg-red-50 text-red-700 border-red-100'
-                    }`}>
-                      {!isAttempted ? 'Unattempted' : latestPassed ? 'Passed' : 'Failed'}
-                    </span>
+                    <StatusBadge status={
+                      isLocked ? 'LOCKED' :
+                      requirementPassed ? 'COMPLETED' :
+                      'PENDING ASSESSMENT'
+                    } />
                   </div>
 
                   <div>
@@ -94,14 +94,37 @@ export default function EmployeeQuizListPage() {
                       {q.description}
                     </p>
                   </div>
+
+                  {/* Case 4 Notice: Failed Quiz */}
+                  {isRetakeAvailable && (
+                    <div className="bg-red-50/80 border border-red-200 rounded-lg p-2.5 text-xxs text-red-700 space-y-1">
+                      <div className="flex items-center justify-between font-bold">
+                        <span className="flex items-center gap-1">
+                          <ShieldAlert className="w-3.5 h-3.5 text-red-500" />
+                          Previous Score: {percentage}% ({q.latestAttempt.score}/{q.latestAttempt.totalQuestions})
+                        </span>
+                        <span className="text-red-600 uppercase">Failed</span>
+                      </div>
+                      <p className="font-semibold text-[11px] leading-tight text-red-800">
+                        You must pass the quiz to successfully complete this training module.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Case 3 Notice: Unlocked, Not Attempted */}
+                  {!isLocked && !isAttempted && (
+                    <div className="bg-blue-50/60 border border-blue-100 rounded-lg p-2 text-xxs text-blue-700 font-medium">
+                      Training finished. Pass mark: {q.passMark}% to complete module.
+                    </div>
+                  )}
                 </div>
 
-                <div className="mt-8 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
                     {isAttempted ? (
                       <div className="text-xs">
                         <p className="font-bold text-slate-700 leading-none mb-1">
-                          Previous Score: <span className={latestPassed ? 'text-emerald-600' : 'text-red-500'}>{percentage}%</span>
+                          Latest Grade: <span className={latestPassed ? 'text-emerald-600 font-extrabold' : 'text-red-500 font-extrabold'}>{percentage}%</span>
                         </p>
                         <p className="text-[10px] text-slate-400 font-semibold uppercase leading-none">
                           {q.latestAttempt.score} of {q.latestAttempt.totalQuestions} Correct answers
@@ -109,7 +132,7 @@ export default function EmployeeQuizListPage() {
                       </div>
                     ) : (
                       <p className="text-xxs text-slate-400 font-semibold uppercase tracking-wider leading-none">
-                        Contains {q.questionCount} questions
+                        Contains {q.questionCount} questions | Pass: {q.passMark}%
                       </p>
                     )}
                   </div>
@@ -120,7 +143,9 @@ export default function EmployeeQuizListPage() {
                         <Button 
                           variant={latestPassed ? 'outline' : 'primary'} 
                           size="sm" 
-                          className="py-1 px-4 text-xs w-full justify-center"
+                          className={`py-1 px-4 text-xs w-full justify-center ${
+                            isRetakeAvailable ? 'bg-red-600 hover:bg-red-500 text-white' : ''
+                          }`}
                           leftIcon={isAttempted ? <RefreshCw className="w-3.5 h-3.5" /> : <PlayCircle className="w-4 h-4" />}
                         >
                           {latestPassed ? 'Retake Test' : isAttempted ? 'Retake Quiz' : 'Start Quiz'}
@@ -135,7 +160,7 @@ export default function EmployeeQuizListPage() {
                           className="py-1 px-4 text-xs w-full opacity-60 cursor-not-allowed justify-center"
                           leftIcon={<PlayCircle className="w-4 h-4" />}
                         >
-                          Start Quiz
+                          Quiz Locked
                         </Button>
                         <p className="text-[9px] text-red-500 font-semibold block text-center uppercase tracking-wider">
                           * Locked. Complete "{q.trainingTitle}" module.

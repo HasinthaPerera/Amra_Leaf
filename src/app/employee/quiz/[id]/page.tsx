@@ -201,21 +201,41 @@ export default function EmployeeQuizPage({ params }: EmployeeQuizPageProps) {
             </div>
           </div>
 
+          {!quizResult.passed ? (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3.5 max-w-sm mx-auto text-center space-y-1">
+              <p className="text-xs font-bold text-red-800">
+                You must pass the quiz to successfully complete this training module.
+              </p>
+              <p className="text-[10px] text-slate-500">
+                Your completed lesson content is preserved. You do not need to repeat the lesson.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 max-w-sm mx-auto text-center space-y-1">
+              <p className="text-xs font-bold text-emerald-800">
+                Training Module Successfully Completed!
+              </p>
+              <p className="text-[10px] text-slate-500">
+                Your progress and compliance metrics have been updated.
+              </p>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4 border-t border-slate-100 max-w-sm mx-auto">
             <Button
-              variant="outline"
-              className="w-full text-xs font-bold py-2 border border-slate-200"
+              variant={quizResult.passed ? 'outline' : 'primary'}
+              className={`w-full text-xs font-bold py-2 ${!quizResult.passed ? 'bg-red-600 hover:bg-red-500 text-white' : 'border border-slate-200'}`}
               onClick={handleReset}
               leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
             >
               RETAKE QUIZ
             </Button>
             <Button
-              variant="primary"
-              className="w-full text-xs font-bold py-2 bg-blue-600 hover:bg-blue-500"
+              variant={quizResult.passed ? 'primary' : 'outline'}
+              className="w-full text-xs font-bold py-2 bg-blue-600 hover:bg-blue-500 text-white"
               onClick={() => router.push('/employee/quiz')}
             >
-              BACK TO PORTAL
+              BACK TO QUIZZES
             </Button>
           </div>
         </Card>

@@ -3,10 +3,13 @@
 import React, { useMemo, useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, BookOpen, Clock, ShieldCheck, AlertCircle, PlayCircle, Award, ArrowRight } from 'lucide-react';
+import { 
+  ArrowLeft, BookOpen, Clock, ShieldCheck, AlertCircle, 
+  PlayCircle, Award, ArrowRight, ShieldAlert, RefreshCw, CheckCircle2 
+} from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { ProgressBar } from '@/components/ui/Feedback';
+import { ProgressBar, StatusBadge } from '@/components/ui/Feedback';
 import { Breadcrumb } from '@/components/ui/Navigation';
 
 interface EmployeeTrainingDetailPageProps {
@@ -20,32 +23,47 @@ export default function EmployeeTrainingDetailPage({ params }: EmployeeTrainingD
   const [module, setModule] = useState<any>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    async function fetchModule() {
-      setLoadingData(true);
-      try {
-        const res = await fetch(`/api/employee/training/${id}`);
-        if (res.ok) {
-          const data = await res.json();
-          setModule(data);
-        }
-      } catch (err) {
-        console.error('Failed to fetch module', err);
-      } finally {
-        setLoadingData(false);
+  const fetchModule = async () => {
+    try {
+      const res = await fetch(`/api/employee/training/${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setModule(data);
       }
+    } catch (err) {
+      console.error('Failed to fetch module', err);
+    } finally {
+      setLoadingData(false);
     }
+  };
+
+  useEffect(() => {
     fetchModule();
   }, [id]);
 
   const userProgress = module?.progress && module.progress.length > 0 ? module.progress[0] : null;
   const progressPercent = userProgress?.progressPercentage || 0;
-  const status = userProgress?.status || 'NOT_STARTED';
-  const isCompleted = status === 'COMPLETED';
-  const isInProgress = status === 'IN_PROGRESS';
+  const isContentCompleted = userProgress?.status === 'COMPLETED';
+  const isInProgress = userProgress?.status === 'IN_PROGRESS';
 
-  // Find linked quiz
-  const linkedQuiz = module?.quizzes && module.quizzes.length > 0 ? module.quizzes[0] : null;
+  // Linked quiz and attempts
+  const quizInfo = module?.quizInfo || (module?.quizzes && module.quizzes.length > 0 ? {
+    id: module.quizzes[0].id,
+    title: module.quizzes[0].title,
+    passMark: module.quizzes[0].passMark,
+    passed: module.quizzes[0].attempts?.some((a: any) => a.passed),
+    latestAttempt: module.quizzes[0].attempts?.[0] || null,
+  } : null);
+
+  const isQuizPassed = !!quizInfo?.passed;
+  const isQuizFailed = quizInfo && quizInfo.latestAttempt && !quizInfo.latestAttempt.passed;
+  const isQuizAttempted = !!quizInfo?.latestAttempt;
+
+  const moduleStatus = module?.moduleStatus || (
+    !isContentCompleted 
+      ? (isInProgress ? 'IN_PROGRESS' : 'NOT_STARTED')
+      : (quizInfo ? (isQuizPassed ? 'COMPLETED' : 'PENDING_ASSESSMENT') : 'COMPLETED')
+  );
 
   const handleStartModule = async () => {
     setLoading(true);
@@ -56,11 +74,7 @@ export default function EmployeeTrainingDetailPage({ params }: EmployeeTrainingD
         body: JSON.stringify({ action: 'START' })
       });
       if (res.ok) {
-        const newProgress = await res.json();
-        setModule((prev: any) => ({
-          ...prev,
-          progress: [newProgress]
-        }));
+        await fetchModule();
       }
     } catch (e) {
       console.error('Failed to start module', e);
@@ -70,7 +84,7 @@ export default function EmployeeTrainingDetailPage({ params }: EmployeeTrainingD
   };
 
   const handleCompleteModule = async () => {
-    if (isCompleted) return;
+    if (isContentCompleted) return;
 
     setLoading(true);
     try {
@@ -80,11 +94,7 @@ export default function EmployeeTrainingDetailPage({ params }: EmployeeTrainingD
         body: JSON.stringify({ action: 'COMPLETE' })
       });
       if (res.ok) {
-        const newProgress = await res.json();
-        setModule((prev: any) => ({
-          ...prev,
-          progress: [newProgress]
-        }));
+        await fetchModule();
       }
     } catch (e) {
       console.error('Failed to complete module', e);
@@ -139,15 +149,7 @@ export default function EmployeeTrainingDetailPage({ params }: EmployeeTrainingD
           </div>
         </div>
 
-        <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold border ${
-          isCompleted 
-            ? 'bg-emerald-50 text-emerald-800 border-emerald-100' 
-            : isInProgress
-            ? 'bg-amber-50 text-amber-850 border-amber-100'
-            : 'bg-slate-50 text-slate-600 border-slate-200'
-        }`}>
-          {isCompleted ? 'Module Finished' : isInProgress ? 'Module In Progress' : 'Not Started'}
-        </span>
+        <StatusBadge status={moduleStatus} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -169,7 +171,7 @@ export default function EmployeeTrainingDetailPage({ params }: EmployeeTrainingD
             </p>
 
             {/* Markdown body render */}
-            <div className={`prose prose-slate max-w-none text-slate-600 text-xs leading-relaxed whitespace-pre-wrap font-sans transition-opacity duration-300 ${status === 'NOT_STARTED' ? 'opacity-50 select-none blur-[1px]' : ''}`}>
+            <div className={`prose prose-slate max-w-none text-slate-600 text-xs leading-relaxed whitespace-pre-wrap font-sans transition-opacity duration-300 ${!isContentCompleted && !isInProgress ? 'opacity-50 select-none blur-[1px]' : ''}`}>
               {module.content?.replace(/^#+\s+/gm, '')?.replace(/\*\*/g, '')}
             </div>
           </Card>
@@ -185,19 +187,21 @@ export default function EmployeeTrainingDetailPage({ params }: EmployeeTrainingD
 
             <div className="space-y-1">
               <div className="flex justify-between items-center text-xxs font-bold text-slate-400 uppercase">
-                <span>Completed</span>
+                <span>Content Progress</span>
                 <span>{progressPercent}%</span>
               </div>
               <ProgressBar value={progressPercent} />
             </div>
 
-            {isCompleted ? (
-              <div className="space-y-3 bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-md shadow-emerald-500/10">
-                  <Award className="w-5 h-5" />
+            {isContentCompleted ? (
+              <div className="space-y-2 bg-emerald-50/50 border border-emerald-100 rounded-xl p-3.5 text-center">
+                <div className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-sm">
+                  <CheckCircle2 className="w-4 h-4" />
                 </div>
-                <p className="text-xs font-bold text-slate-800">Module Completed ✓</p>
-                <p className="text-[10px] text-slate-400 leading-normal">You have completed reading the core materials of this module.</p>
+                <p className="text-xs font-bold text-slate-800">Training Content Finished ✓</p>
+                <p className="text-[10px] text-slate-400 leading-normal">
+                  You have completed reading the core materials.
+                </p>
               </div>
             ) : isInProgress ? (
               <Button
@@ -222,29 +226,94 @@ export default function EmployeeTrainingDetailPage({ params }: EmployeeTrainingD
           </Card>
 
           {/* Linked Quiz Box */}
-          {linkedQuiz && (
-            <Card className="p-5 space-y-4 border-l-4 border-l-purple-600">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
-                <ShieldCheck className="w-4.5 h-4.5 text-purple-500" />
-                Module Assessment
-              </h3>
+          {quizInfo && (
+            <Card className={`p-5 space-y-4 border-l-4 ${isQuizPassed ? 'border-l-emerald-600' : isQuizFailed ? 'border-l-red-500' : 'border-l-purple-600'}`}>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <ShieldCheck className={`w-4.5 h-4.5 ${isQuizPassed ? 'text-emerald-500' : isQuizFailed ? 'text-red-500' : 'text-purple-500'}`} />
+                  Module Assessment
+                </h3>
+                <span className={`px-2 py-0.5 rounded text-xxs font-bold uppercase tracking-wider ${
+                  !isContentCompleted ? 'bg-slate-100 text-slate-500' :
+                  isQuizPassed ? 'bg-emerald-50 text-emerald-700' :
+                  isQuizFailed ? 'bg-red-50 text-red-700' :
+                  'bg-blue-50 text-blue-700'
+                }`}>
+                  {!isContentCompleted ? 'Locked' : isQuizPassed ? 'Passed' : isQuizFailed ? 'Retake Available' : 'Unlocked'}
+                </span>
+              </div>
               
-              <p className="text-xxs text-slate-400 leading-relaxed font-semibold">
-                Test your knowledge now. Complete the multiple-choice quiz linked to this module to register your grade in the compliance directory.
-              </p>
+              {/* Case 4: Content Finished, Quiz Failed */}
+              {isContentCompleted && isQuizFailed && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-red-800">
+                    <span className="flex items-center gap-1">
+                      <ShieldAlert className="w-4 h-4 text-red-500" />
+                      Previous Score:
+                    </span>
+                    <span className="text-red-600 text-sm font-black">
+                      {quizInfo.latestAttempt.percentage}% ({quizInfo.latestAttempt.score}/{quizInfo.latestAttempt.totalQuestions})
+                    </span>
+                  </div>
+                  <p className="text-xs font-semibold text-red-800 leading-snug">
+                    You must pass the quiz to successfully complete this training module.
+                  </p>
+                  <p className="text-[10px] text-slate-500">
+                    Training content is preserved. You do not need to repeat the lesson.
+                  </p>
+                </div>
+              )}
 
-              <Link href={`/employee/quiz/${linkedQuiz.id}`}>
+              {/* Case 5: Content Finished, Quiz Passed */}
+              {isContentCompleted && isQuizPassed && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 space-y-1 text-center">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-md">
+                    <Award className="w-5 h-5" />
+                  </div>
+                  <p className="text-xs font-bold text-emerald-800">Quiz Passed ({quizInfo.latestAttempt?.percentage}%) ✓</p>
+                  <p className="text-[10px] text-slate-500 leading-normal">
+                    This training module is fully completed and credited to your compliance score.
+                  </p>
+                </div>
+              )}
+
+              {/* Case 3: Content Finished, Quiz Not Attempted */}
+              {isContentCompleted && !isQuizAttempted && (
+                <p className="text-xxs text-slate-500 leading-relaxed font-semibold">
+                  Test your knowledge now. Complete the multiple-choice quiz linked to this module to successfully finish and register your compliance credit.
+                </p>
+              )}
+
+              {/* Case 1 & 2: Content Not Finished */}
+              {!isContentCompleted && (
+                <p className="text-xxs text-slate-400 leading-relaxed font-semibold">
+                  Complete the training materials above to unlock the module quiz evaluation.
+                </p>
+              )}
+
+              <Link href={`/employee/quiz/${quizInfo.id}`}>
                 <Button 
                   variant="primary" 
-                  className="w-full justify-center text-xs font-bold py-2 bg-purple-600 hover:bg-purple-500"
-                  disabled={!isCompleted}
-                  rightIcon={<ArrowRight className="w-4 h-4" />}
+                  className={`w-full justify-center text-xs font-bold py-2 ${
+                    isQuizPassed ? 'bg-slate-700 hover:bg-slate-600' :
+                    isQuizFailed ? 'bg-red-600 hover:bg-red-500' :
+                    'bg-purple-600 hover:bg-purple-500'
+                  }`}
+                  disabled={!isContentCompleted}
+                  leftIcon={isQuizFailed ? <RefreshCw className="w-4 h-4" /> : undefined}
+                  rightIcon={!isQuizFailed ? <ArrowRight className="w-4 h-4" /> : undefined}
                 >
-                  TAKE MODULE QUIZ
+                  {!isContentCompleted 
+                    ? 'QUIZ LOCKED' 
+                    : isQuizPassed 
+                    ? 'RETAKE ASSESSMENT' 
+                    : isQuizFailed 
+                    ? 'RETAKE MODULE QUIZ' 
+                    : 'TAKE MODULE QUIZ'}
                 </Button>
               </Link>
               
-              {!isCompleted && (
+              {!isContentCompleted && (
                 <p className="text-[10px] text-slate-400 leading-none text-center font-bold uppercase tracking-wider">
                   * Complete the training module to unlock the quiz.
                 </p>

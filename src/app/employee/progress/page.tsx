@@ -204,22 +204,26 @@ export default function EmployeeProgressPage() {
         {/* Training Finished */}
         <Card className="lg:col-span-1 space-y-4">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">
-            Completed Lessons
+            Training Modules
           </h3>
 
           <div className="space-y-3">
             {(data.trainingDetails || []).map((t: any) => (
               <div key={t.id} className="flex justify-between items-center p-2.5 border border-slate-100 rounded-lg text-xs">
-                <div className="truncate max-w-[65%]">
+                <div className="truncate max-w-[60%]">
                   <p className="font-bold text-slate-700 truncate">{t.title}</p>
                 </div>
                 <div className="text-right">
                   <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xxs font-bold uppercase tracking-wider ${
                     t.status === 'COMPLETED' 
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                      : t.status === 'PENDING_ASSESSMENT'
+                      ? 'bg-amber-50 text-amber-700 border-amber-100'
+                      : t.status === 'IN_PROGRESS'
+                      ? 'bg-blue-50 text-blue-700 border-blue-100'
                       : 'bg-slate-50 text-slate-500 border-slate-100'
                   }`}>
-                    {t.status === 'COMPLETED' ? 'Finished' : t.status.replace('_', ' ')}
+                    {t.status === 'COMPLETED' ? 'Completed' : t.status === 'PENDING_ASSESSMENT' ? 'Pending Assessment' : t.status.replace('_', ' ')}
                   </span>
                   {t.status === 'COMPLETED' && (
                     <p className="text-[9px] text-slate-400 mt-0.5 font-medium leading-none">{formatDate(t.completedAt).split(' ')[0]}</p>

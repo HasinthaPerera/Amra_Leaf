@@ -37,7 +37,7 @@ export interface EmployeeComplianceResult {
   trainingDetails: {
     id: string;
     title: string;
-    status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+    status: 'NOT_STARTED' | 'IN_PROGRESS' | 'PENDING_ASSESSMENT' | 'COMPLETED';
     completedAt: Date | null;
   }[];
 
@@ -144,27 +144,56 @@ export async function calculateEmployeeCompliance(userId: string): Promise<Emplo
   
   for (const module of currentTrainingModules) {
     const progress = user.trainingProgress.find(p => p.trainingId === module.id);
-    
-    if (progress?.status === 'COMPLETED') {
+    const relatedQuiz = currentQuizzes.find(q => q.trainingId === module.id);
+    const quizAttempts = relatedQuiz 
+      ? user.quizAttempts.filter(a => a.quizId === relatedQuiz.id)
+      : [];
+    const passedQuiz = relatedQuiz 
+      ? quizAttempts.some(a => a.passed)
+      : true;
+
+    const isContentCompleted = progress?.status === 'COMPLETED';
+    const isContentInProgress = progress?.status === 'IN_PROGRESS';
+
+    if (isContentCompleted && passedQuiz) {
       trainingCompleted++;
+      const passingAttempt = quizAttempts.find(a => a.passed);
       trainingDetails.push({
         id: module.id,
         title: module.title,
         status: 'COMPLETED',
-        completedAt: progress.completedAt
+        completedAt: passingAttempt?.submittedAt || progress?.completedAt || null
       });
-    } else {
-      if (progress?.status !== 'IN_PROGRESS') pendingActionCount++;
+    } else if (isContentCompleted && !passedQuiz) {
       trainingDetails.push({
         id: module.id,
         title: module.title,
-        status: progress?.status || 'NOT_STARTED',
+        status: 'PENDING_ASSESSMENT',
         completedAt: null
       });
-
+    } else if (isContentInProgress) {
+      trainingDetails.push({
+        id: module.id,
+        title: module.title,
+        status: 'IN_PROGRESS',
+        completedAt: null
+      });
       trainingNeeds.push({
         title: module.title,
-        need: progress?.status === 'IN_PROGRESS' ? 'Training In Progress' : 'Training Required',
+        need: 'Training In Progress',
+        type: 'TRAINING'
+      });
+    } else {
+      pendingActionCount++;
+      trainingDetails.push({
+        id: module.id,
+        title: module.title,
+        status: 'NOT_STARTED',
+        completedAt: null
+      });
+      trainingNeeds.push({
+        title: module.title,
+        need: 'Training Required',
         type: 'TRAINING'
       });
     }

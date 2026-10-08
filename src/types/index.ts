@@ -71,7 +71,7 @@ export interface UserProgress {
   trainingProgress: {
     moduleId: string;
     progressPercent: number; // 0 to 100
-    status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+    status: 'NOT_STARTED' | 'IN_PROGRESS' | 'PENDING_ASSESSMENT' | 'COMPLETED';
     completedAt?: string;
   }[];
   quizResults: QuizResult[];

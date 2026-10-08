@@ -306,10 +306,11 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
                     <p className="font-bold text-slate-700 truncate max-w-[80%]">{t.title}</p>
                     <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xxs font-bold uppercase tracking-wider ${
                       t.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
+                      t.status === 'PENDING_ASSESSMENT' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
                       t.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
                       'bg-slate-50 text-slate-500 border border-slate-200'
                     }`}>
-                      {t.status.replace('_', ' ')}
+                      {t.status === 'PENDING_ASSESSMENT' ? 'PENDING ASSESSMENT' : t.status.replace('_', ' ')}
                     </span>
                   </div>
                   {t.status === 'COMPLETED' && (

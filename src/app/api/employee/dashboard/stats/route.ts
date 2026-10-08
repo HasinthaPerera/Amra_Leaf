@@ -33,12 +33,14 @@ export async function GET() {
 
     const pendingTrainingMerged = pendingTrainingFull.map(t => {
       const prog = userProgress.find(p => p.trainingId === t.id);
+      const detail = data.trainingDetails.find(td => td.id === t.id);
       return {
         id: t.id,
         title: t.title,
         description: t.description,
         estimatedDuration: `${t.estimatedMinutes} min`,
-        progressPercent: prog?.progressPercentage || 0
+        progressPercent: prog?.progressPercentage || 0,
+        status: detail?.status || 'NOT_STARTED'
       };
     });
 
